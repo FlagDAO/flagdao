@@ -1,0 +1,2 @@
+export const supabaseUrl="https://jhkietfblpmfxiyuslnq.supabase.co";
+export const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impoa2lldGZibHBtZnhpeXVzbG5xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4NjEwMjQwMCwiZXhwIjoyMDAxNjc4NDAwfQ.v1s5I5PXnIjm1W7XjtTTWRfn_Veg5798UVTVuSOrcWc"
