@@ -25,9 +25,9 @@ FlagDAO 是一个为爱立 Flag 星人准备的 DAO，在本 DAO 中，每个人
 - DAO organization
    - DAO 内事务防 flop，防止 claim 了预付资金后项目烂尾的情况。  
 
-判断 falg 交付物：
+判断 flag 交付物：
 - DAO 受信任，有声望的多签 holder 来评价 flag 的完成情况
-- DAO 治理放来评估涌现项目的加成比例。
+- DAO 治理来评估涌现项目的加成比例。
 
 针对成员
 
