@@ -1,3 +1,9 @@
+# Build
+
+```bash
+$ yarn run dev
+```
+
 # Team
 - @孝羽、@大力 Lee ： idea Founder
 - @Logic Frontend 
