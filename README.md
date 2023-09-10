@@ -1,3 +1,10 @@
+# Team
+- @孝羽、@大力 Lee ： idea Founder
+- @Logic Frontend 
+- @智鹏 Pluto  Potential Smart Contract dev
+- @Demian：frontend、Contract dev
+
+
 # FlagDAO
 FlagDAO 是一个为爱立 Flag 星人准备的 DAO，在本 DAO 中，每个人都有他自己的 Flag，每个人都想实现他的 Flag，每个人都会为其 Flag 进行质押，或者尝试判断别人的 Flag 什么时候倒 （：  
 
@@ -10,16 +17,26 @@ FlagDAO 是一个为爱立 Flag 星人准备的 DAO，在本 DAO 中，每个人
 
 ![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2023-09-04-IMG_0856.jpg)
 
+
+应用场景、组织：
+
+- co-learn Group
+   - 学习成果、分享的承诺
+- DAO organization
+   - DAO 内事务防 flop，防止 claim 了预付资金后项目烂尾的情况。  
+
+判断 flag 交付物：
+- DAO 受信任，有声望的多签 holder 来评价 flag 的完成情况
+- DAO 治理来评估涌现项目的加成比例。
+
+针对成员
+
 权限问题：
 
 - 组织审核 flag 的可交付性、是否有分享的价值，是否对组织发展有利。
 
 
 
-应用场景、组织：
-
-- co-learn Group
-- DAO organization
 
 
 
