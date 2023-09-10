@@ -64,10 +64,9 @@ Demian 个人给 co-learn 的初始国库提供 100U 作为激励
 95%, 100%, 120% , 现金流
 
 多余的进入 co-learn 国库
+$$
+\mathcal{Z}_2 \mathbb{O} \hbox{-} \mathcal{K}_7 \mathbb{E}
+$$
 
 
-
-
-
-
-
+##### 
