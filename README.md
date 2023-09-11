@@ -7,7 +7,7 @@ $ yarn run dev
 # Team
 - @孝羽、@大力 Lee ： idea Founder
 - @Logic Frontend 
-- @智鹏 Pluto  Potential Smart Contract dev
+- @Pluto  Potential Smart Contract dev
 - @Demian：frontend、Contract dev
 
 
