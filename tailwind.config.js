@@ -1,23 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        'custom-gray': 'rgb(252, 252, 252)',
+        "custom-gray": "rgb(252, 252, 252)",
       },
       fontFamily: {
-        sans: ['Helvetica', 'Arial', 'sans-serif'],
+        sans: ["Helvetica", "Arial", "sans-serif"],
       },
     },
   },
   variants: {
     extend: {
-      opacity: ['group-hover']
-    }
+      opacity: ["group-hover"],
+    },
   },
   plugins: [],
 }
