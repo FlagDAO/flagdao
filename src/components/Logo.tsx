@@ -9,8 +9,8 @@ const Logo: React.FC = () => {
           <a href="/">
             {/* <img src="../logo2.png" className="w-24" alt="Flowbite Logo" /> */}
             {/* <img src="../logo.png" className="h-20 w-14" alt="Flowbite Logo" /> */}
-            <span className="self-center text-2xl font-bold whitespace-nowrap text-red-300">
-              FlagDAO{" "}
+            <span className="self-center text-2xl font-bold whitespace-nowrap text-indigo-500">
+              FlagDAO ✨{" "}
             </span>
           </a>
         </div>
