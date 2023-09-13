@@ -83,9 +83,9 @@ const BettorsModal: React.FC<HoverModalProps> = ({ bettors_plg, flag_id }) => {
         onMouseMove={closeModal}
         className="text-sm pt-1 pr-1 ml-4 underline"
       >
-        Bettors:{" "}
-      </button>{" "}
-      <span className="text-lg font-bold text-lime-700">
+        Bettors:
+      </button>
+      <span className="text-lg font-bold text-indigo-700">
         ${bettors_plg.toString()}
       </span>
       <Modal

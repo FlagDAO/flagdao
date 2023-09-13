@@ -112,8 +112,8 @@ const Card: React.FC<CardProps> = (props) => {
               <img className="inline pl-2" src="../iconmonstr-quote-3.svg" />
             </p>
             <div className="flex justify-start font-sans py-1 text-slate-400 font-medium">
-              <span className="text-sm pt-1 pr-1">Self Pleaged: </span>{" "}
-              <span className="text-lg font-bold text-lime-700">
+              <span className="text-sm pt-1 pr-1">Self Pledged: </span>{" "}
+              <span className="text-lg font-bold text-indigo-700">
                 {" "}
                 ${props?.self_plg?.toString()}
               </span>
