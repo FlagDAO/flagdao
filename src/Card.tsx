@@ -189,7 +189,7 @@ const Card: React.FC<CardProps> = (props) => {
                   </div>
                   <button
                     type="submit"
-                    className="w-full border-x-0.5 font-sans font-semibold text-slate-100 text-base px-2 py-1 text-center mr-2 mb-2 bg-gradient-to-br from-indigo-300 via-blue-400 to-indigo-400 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 rounded-lg "
+                    className="w-full border-x-0.5 font-sans font-semibold text-slate-100 text-base px-2 py-1 text-center mr-2 mb-2 bg-gradient-to-br from-indigo-300 via-blue-400 to-indigo-400 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-200 rounded-lg "
                   >
                     Pledge
                   </button>
