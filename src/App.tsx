@@ -115,7 +115,7 @@ const App = () => {
 
   return (
     <div className="w-full mx-auto md:w-7/12 bg-white">
-      <header className="bg-white h-auto">
+      <header className="bg-white h-auto mt-3">
         <div className="flex p-4 items-center justify-center">
           <div className="flex-1 bg-white">
             <Logo />
