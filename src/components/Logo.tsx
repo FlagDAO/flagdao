@@ -3,13 +3,15 @@ import React, { useState, useEffect, useRef } from "react"
 const Logo: React.FC = () => {
   // React.FC<CardProps> </CardProps>
   return (
-    <nav className="border-gray-200">
+    <nav>
       <div className="flex items-center justify-between">
         <div>
-          <a href="/" className="">
-            <img src="../logo2.png" className="h-32 w-24" alt="Flowbite Logo" />
+          <a href="/">
+            <img src="../logo2.png" className="w-24" alt="Flowbite Logo" />
             {/* <img src="../logo.png" className="h-20 w-14" alt="Flowbite Logo" /> */}
-            {/* <span className="self-center text-2xl font-semibold whitespace-nowrap">FlagDAO </span> */}
+            {/* <span className="self-center text-2xl font-bold whitespace-nowrap text-red-300">
+              FlagDAO{" "}
+            </span> */}
           </a>
         </div>
       </div>

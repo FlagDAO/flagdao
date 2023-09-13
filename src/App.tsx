@@ -114,10 +114,10 @@ const App = () => {
   // console.log("data..", (data as { goal: string }[])[0]?.goal);
 
   return (
-    <div className="w-2/3 mx-auto md:w-7/12 bg-custom-gray">
-      <header className="bg-custom-gray h-auto">
+    <div className="w-full mx-auto md:w-7/12 bg-white">
+      <header className="bg-white h-auto">
         <div className="flex p-4 items-center justify-center">
-          <div className="flex-1 bg-custom-gray">
+          <div className="flex-1 bg-white">
             <Logo />
           </div>
           <Dropdown onValueChange={handleValueChange} />
