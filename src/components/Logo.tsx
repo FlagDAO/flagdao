@@ -9,7 +9,7 @@ const Logo: React.FC = () => {
           <a href="/">
             {/* <img src="../logo2.png" className="w-24" alt="Flowbite Logo" /> */}
             {/* <img src="../logo.png" className="h-20 w-14" alt="Flowbite Logo" /> */}
-            <span className="self-center text-2xl font-bold whitespace-nowrap text-indigo-500">
+            <span className="self-center text-3xl whitespace-nowrap font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-blue-500 to-indigo-500">
               FlagDAO ✨{" "}
             </span>
           </a>

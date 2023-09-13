@@ -168,13 +168,18 @@ const Card: React.FC<CardProps> = (props) => {
                 </span>
               ) : (
                 <>
-                  {/* <label htmlFor="input-group-1" className="block mb-2 text-sm font-medium text-gray-900">Your Email</label> */}
+                  {/* <label
+                    htmlFor="input-group-1"
+                    className="block mb-2 text-sm font-medium text-gray-900"
+                  >
+                    Your Email
+                  </label> */}
                   <div className="relative mb-2">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-1 pointer-events-none">
                       <BsCurrencyBitcoin className="w-5 h-5 text-gray-500" />
                     </div>
                     <input
-                      className="w-20 pl-6 bg-gray-50 border border-gray-300 text-gray-500 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-1.5  "
+                      className="w-20 pl-6 bg-gray-50 border border-gray-300 text-gray-500 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-1.5"
                       onChange={(e: any) => setAmt(e.target.value)}
                       placeholder="$0"
                       value={_amt}
@@ -184,7 +189,7 @@ const Card: React.FC<CardProps> = (props) => {
                   </div>
                   <button
                     type="submit"
-                    className="w-full border-x-0.5 font-sans font-semibold text-slate-100 text-base px-2 py-1 text-center mr-2 mb-2 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 rounded-lg "
+                    className="w-full border-x-0.5 font-sans font-semibold text-slate-100 text-base px-2 py-1 text-center mr-2 mb-2 bg-gradient-to-br from-indigo-300 via-blue-400 to-indigo-400 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 rounded-lg "
                   >
                     Pledge
                   </button>
