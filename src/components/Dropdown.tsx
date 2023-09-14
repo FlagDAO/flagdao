@@ -70,7 +70,7 @@ const Dropdown: React.FC<ChildComponentProps> = ({
             <div
               id="dropdownNavbar"
               className="z-10 font-normal bg-white divide-y divide-gray-100 rounded-lg shadow w-44 absolute"
-              style={{ top: "100%" }}
+              style={{ top: "115%" }}
             >
               <ul
                 className="py-2 text-sm text-gray-700"
