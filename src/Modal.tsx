@@ -191,7 +191,7 @@ const ModalComponent: React.FC<PorpsType> = ({
     <div className="flex justify-center items-center">
       <button
         onClick={openModal}
-        className="mt-16 items-center w-auto text-center my-4 px-14 mx-10 bg-gradient-to-br from-indigo-300 via-blue-400 to-indigo-400 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-200  text-white font-bold py-3 rounded-xl text-xl"
+        className="mt-16 items-center w-auto text-center my-4 px-8 mx-10 bg-gradient-to-br from-indigo-300 via-blue-400 to-indigo-400 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-200  text-white font-bold py-3 rounded-xl text-xl"
       >
         Create Flag
       </button>
