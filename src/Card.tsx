@@ -1,4 +1,4 @@
-import { useContractWrite, usePrepareContractWrite, useAccount } from "wagmi"
+import { useContractWrite, usePrepareContractWrite, useAccount, useContractEvent} from "wagmi"
 import { createClient } from "@supabase/supabase-js"
 import { supabaseKey, supabaseUrl } from "./env"
 import Avatar, { genConfig } from "react-nice-avatar"
@@ -7,19 +7,15 @@ import { getTimeDifference } from "./utils/utils"
 import { useState, useEffect, lazy } from "react"
 import { CardProps } from "./App"
 // import contractABI from "./utils/FlagDAO.json";
-import { BigNumber } from "ethers"
 import useDebounce from "./usehooks"
 import {
   FLAGDAO_CONTRACT_ADDR,
-  REACT_APP_CHAIN_ID,
   contractABI,
-  ERC20_CONTRACT_ADDR,
-  ercABI,
 } from "./utils/constants"
 const BettorsModal = lazy(() => import("./components/BettorsModal"))
 import { BsCurrencyBitcoin } from "react-icons/bs"
 
-const config = genConfig()
+// const config = genConfig()
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 const Card: React.FC<CardProps> = (props) => {
@@ -52,7 +48,6 @@ const Card: React.FC<CardProps> = (props) => {
   } = useContractWrite(config)
   if (error) console.log("Pledge error", error)
 
-  // console.log("props.bettors_plg .. ",props.name, props.bettors_plg, _amt);
 
   const updateBackend = async (_id: any) => {
     if (address == props.address) {
@@ -72,9 +67,24 @@ const Card: React.FC<CardProps> = (props) => {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    write_pledge?.()
-    updateBackend(_id)
+    try {
+      await write_pledge?.()
+      // 
+    } catch (error) {
+      console.error('Chain transaction failed:', error)
+    }
   }
+
+  // listen the blockchain chage.   // useEffect(() => {  },[])
+  useContractEvent({
+    address: FLAGDAO_CONTRACT_ADDR,
+    abi: contractABI,
+    eventName: 'Launch',
+    listener(log) {
+      updateBackend(_id)   // 更新后端 console.log(log)
+    },
+  })
+
 
   const HoverComponent = () => {
     return (
@@ -118,10 +128,11 @@ const Card: React.FC<CardProps> = (props) => {
                 ${props?.self_plg?.toString()}
               </span>
               {/* <span className="text-sm pt-1 pr-1 ml-4">Bettors: </span> <span className="text-lg font-bold text-lime-700">${props?.bettors_plg?.toString()}</span> */}
+              {/* 
               <BettorsModal
                 bettors_plg={props.bettors_plg}
                 flag_id={props.flag_id}
-              />
+              /> */}
             </div>
 
             <div className="flex justify-start text-xs py-1 text-slate-400 font-medium">

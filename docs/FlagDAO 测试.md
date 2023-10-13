@@ -1,4 +1,13 @@
-# 先别管样式问题，先完成 Roadmap 里的核心功能
+#### 先别管样式问题，先完成 Roadmap 里的核心功能
+
+需求优先级：
+
+- [ ] 前端调用合约的 BUG
+- [ ] 加一个 claim token 按钮？
+
+
+
+记得 check 以下 supabase 的后端可用性，它每周 inactive 会 drop table Content
 
 
 
@@ -69,7 +78,7 @@
 
 ￥399  ->    10000 `$LTT`
 
-["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98"]
+
 10000
 Co-Learn Token
 `$LT`
@@ -92,37 +101,37 @@ Token 地址：
 
 ```bash
 LT 
-["0x5B38Da6a701c568545dCfcB03FcB875f56beddC4"]
+["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98"]
 
 Deploy address :
-0xD7ACd2a9FD159E69Bb102A1ca21C9a3e3A5F771B
+  0x996Ec90e8071217A834eBa3aFCEfB2DB2F0EF27e
 ```
 
 2. 部署 FlagDAO.sol
 
 ```bash
 # _Token
-0xD7ACd2a9FD159E69Bb102A1ca21C9a3e3A5F771B
+如上
 # _OWNERS
-["0x5B38Da6a701c568545dCfcB03FcB875f56beddC4"]
+["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98"]
 # _NUMCONFIRMATIONSREQUIRED
-1 
+1
 
 FlagDAO depoly at:  
-  0x0498B7c793D7432Cd9dB27fb02fc9cfdBAfA1Fd3
+  0x711014801Ab7fB9d3C956077b04f1909C09270c3
 ```
 
 
 
-3. 回到 ERC-20.sol ApproveBatch 给多个地址授权 FlagDAO.sol 转移用户的这个 ERC-20 代币
+3. 回到 ERC-20.sol  ApproveBatch 给多个地址授权 FlagDAO.sol 转移用户的这个 ERC-20 代币
 
 ApproveBatch:
 
 ```bash
 #appr_addrs: 
-["0x5B38Da6a701c568545dCfcB03FcB875f56beddC4"]
+["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98"]
 #spender(FlagDAO.sol 部署的合约地址): 
-0x0498B7c793D7432Cd9dB27fb02fc9cfdBAfA1Fd3
+如上
 
 amount: 10000  # 每人授权 FlagDAO 可以动用 10000 枚 token （方便测试，实际使用时需让用户 approve）
 ```

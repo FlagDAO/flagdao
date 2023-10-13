@@ -25,7 +25,6 @@ import {
 import {
   contractABI,
   FLAGDAO_CONTRACT_ADDR,
-  REACT_APP_CHAIN_ID,
   ercABI,
   ERC20_CONTRACT_ADDR,
 } from "./utils/constants"

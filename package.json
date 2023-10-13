@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rainbow-me/rainbowkit": "workspace:*",
+    "@rainbow-me/rainbowkit": "1.1.1",
     "@supabase/supabase-js": "^2.24.0",
     "@types/react-modal": "^3.16.0",
     "buffer": "^6.0.3",
@@ -19,8 +19,8 @@
     "react-modal": "^3.16.1",
     "react-nice-avatar": "^1.4.0",
     "react-router-dom": "^6.12.0",
-    "viem": "^1.0.1",
-    "wagmi": "^1.1.1"
+    "viem": "^1.16.5",
+    "wagmi": "^1.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.2.5",

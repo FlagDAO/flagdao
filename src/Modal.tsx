@@ -8,6 +8,7 @@ import {
   usePrepareContractWrite,
   useContractEvent,
   useAccount,
+  useNetwork
 } from "wagmi"
 import {
   FLAGDAO_CONTRACT_ADDR,
@@ -44,16 +45,18 @@ const ModalComponent: React.FC<PorpsType> = ({
   fetchFlags,
 }) => {
   const { address } = useAccount()
-
+  const { chain } = useNetwork()
+  
   const [modalIsOpen, setIsOpen] = useState(false)
+  const [goal, setGoal] = useState<string>()
+  const [pledgement, setPledgement] = useState<number>()
+  const _goal = useDebounce(goal, 500)
+  const _pledgement = useDebounce(pledgement, 500)
+
   const [onChain, setOnChain] = useState(true)
   // const [flagId, setFlagId] = useState<any | undefined>();
   const [data, setData] = useState<Inputs>()
   const _data = useDebounce(data, 500)
-  const [isGoingonchain, setIsGoingonchain] = useState(false)
-
-  const [goal, setGoal] = useState<string>()
-  const [pledgement, setPledgement] = useState<number>()
 
   const {
     register,
@@ -63,104 +66,37 @@ const ModalComponent: React.FC<PorpsType> = ({
   } = useForm<Inputs>()
 
   useEffect(() => {
-    if (watch("isOnchain") === "onchain") {
-      setOnChain(true)
-    } else if (watch("isOnchain") === "offchain") {
-      setOnChain(false)
-    }
-  }, [watch("isOnchain")])
-
-  useEffect(() => {
     setPledgement(watch("pledgement"))
     setGoal(watch("goal"))
+    console.log("goal, pledgement: ", goal, pledgement)
   }, [watch("pledgement"), watch("goal")])
 
-  // function sleep(ms: any) {
-  //   return new Promise(resolve => setTimeout(resolve, ms));
-  // }
-
-  useContractEvent({
-    address: FLAGDAO_CONTRACT_ADDR,
-    abi: contractABI,
-    eventName: "Launch",
-    listener(log: any) {
-      console.log("log[0].args.id.....", log[0])
-      setFlagId(log[0].args.id)
-      setIsGoingonchain(false)
-    },
-  })
 
   const { config } = usePrepareContractWrite({
     address: FLAGDAO_CONTRACT_ADDR,
     abi: contractABI,
+    chainId: chain?.id,
     functionName: "launch",
-    args: [goal, pledgement, 1685156971, 1686971371],
-    enabled: Boolean(goal),
+    args: [_goal, _pledgement],
+    enabled: Boolean(_pledgement),
   })
-  const { data: res, isLoading, write, error } = useContractWrite(config) // res: hash
+  const { data: res, isLoading, write, error } = useContractWrite(config)
+  // console.log("write() function:", write);  if Metamask can't be called, check it.
+
 
   const onSubmit: SubmitHandler<Inputs> = async (data, e) => {
-    // e?.preventDefault();
+    write?.();
+    console.log("submitting & write?.() to blockchain...")
     setData(data)
-    write?.()
-    console.log("start Submitting onChain...: write?.()")
-    console.log("isLoading", isLoading)
-    setIsGoingonchain(true)
-    // } else {
-    //   console.log("onSubmit postFlagOffchain")
-    //   postFlagOffchain();
-    // }
   }
-
-  function openModal() {
-    setIsOpen(true)
-  }
-  function closeModal() {
-    setIsOpen(false)
-  }
-
-  /*
-  // data 是 Transaction hash
-  // variables 是 pass to Contract 的 params
-  const { data: hash, isLoading, isSuccess, writeAsync, variables } = useContractWrite({
-    address: FLAGDAO_CONTRACT_ADDR,
-    abi: contractABI,
-    functionName: 'launch',
-    // chainId ... // old version (under 0.1) you MUST specify chainID. fk
-  })*/
-
-  // const { config: cfg } = usePrepareContractWrite({
-  //   address: ERC20_CONTRACT_ADDR,
-  //   abi: ercABI,
-  //   functionName: 'approve',
-  //   args: [FLAGDAO_CONTRACT_ADDR, data?.pledgement],
-  //   // chainId ... // old version (under 0.1) you MUST specify chainID. fk
-  // })
-  // const { data: data_arc, isLoading: islding, write: wrtErc } = useContractWrite(cfg)
-
-  const postFlagOffchain = async () => {
-    if (_data) {
+  // console.log("submit data", data)
+  
+  const postToBackendDatabase = async (flag_id: number) => {
+    if (_data) { // if (_data && onChain && typeof flagId !== "undefined") {
+      console.log("postToBackendDatabase(), flag_id: ", flag_id)
       const { error, data: res } = await supabase.from("flag").insert([
         {
-          name: _data.name,
-          address: _data.address,
-          goal: _data.goal,
-          goalType: _data.goal_type,
-          onChain,
-          startAt: _data.start_date === "" ? null : _data.start_date,
-          endAt: _data.end_date === "" ? null : _data.end_date,
-        },
-      ])
-    }
-  }
-
-  const postFlag = async () => {
-    // flagId = 0 相当于是 false, 所以第 "1" 个(idx 为 0) 需要手动创建...
-    if (_data && onChain && typeof flagId !== "undefined") {
-      console.log("post FlagID: ", flagId, "to Backend....")
-      const { error, data: res } = await supabase.from("flag").insert([
-        {
-          flagID: Number(flagId),
+          flagID: Number(flag_id), // whereas `TypeError: Do not know how to serialize a BigInt`
           name: _data.name,
           address: _data.address,
           goal: _data.goal,
@@ -170,17 +106,34 @@ const ModalComponent: React.FC<PorpsType> = ({
           startAt: _data.start_date === "" ? null : _data.start_date,
           endAt: _data.end_date === "" ? null : _data.end_date,
         },
-      ])
+      ]).select()
+      console.log("postToBackendDatabase res", res)
+      console.log("postToBackendDatabase error", error)
     }
   }
 
-  // 这里暂时有一个小 Bug, 每次页面刷新都会尝试将 flag 写入后端, 不过因为 flagID 不能重复,
-  // 所以每次写入都会失败, 虽然不影响运行, 但是看起来丑丑的.
-  useEffect(() => {
-    postFlag()
-    fetchFlags()
-    console.log("flagID is ", flagId, "postFlag() will excute again..")
-  }, [flagId])
+  // Listen Event, when on-chain contract successes, execute it to post backend database.
+  useContractEvent({
+    address: FLAGDAO_CONTRACT_ADDR,
+    abi: contractABI,
+    eventName: "Launch",
+    listener(log: any) {
+      console.log("log[0].args.id.....", log[0])
+      setFlagId(log[0].args.id)
+      postToBackendDatabase(log[0].args.id) // pass in the flag_id.
+    },
+  })
+
+  function openModal() { setIsOpen(true) }
+  function closeModal() { setIsOpen(false) }
+
+  // // 这里暂时有一个小 Bug, 每次页面刷新都会尝试将 flag 写入后端, 不过因为 flagID 不能重复,
+  // // 所以每次写入都会失败, 虽然不影响运行, 但是看起来丑丑的.
+  // useEffect(() => {
+  //   postFlag()
+  //   fetchFlags()
+  //   console.log("flagID is ", flagId, "postFlag() will excute again..")
+  // }, [flagId])
 
   // Close modal...
   // function handleSubmit() {
@@ -208,7 +161,7 @@ const ModalComponent: React.FC<PorpsType> = ({
           </h3>
 
           {/* "handleSubmit" will validate your inputs before invoking "onSubmit" */}
-          <form onSubmit={handleSubmit((e) => onSubmit(e))}>
+          <form onSubmit={handleSubmit((e) =>  onSubmit(e))}>
             {/* register your input into the hook by invoking the "register" function */}
 
             <label className="block text-gray-700 font-bold">
@@ -301,7 +254,6 @@ const ModalComponent: React.FC<PorpsType> = ({
               </>
             )}
 
-            {/* Radios 单选 - 机构类型  */}
             <>
               <label className="text-gray-700 font-bold block mt-4">
                 * Goal Type：
@@ -362,7 +314,7 @@ const ModalComponent: React.FC<PorpsType> = ({
               </div>
             </>
 
-            <>
+            {/* <>
               <label className="text-gray-700 font-bold inline mt-4">
                 Flag Start At:
               </label>
@@ -382,7 +334,7 @@ const ModalComponent: React.FC<PorpsType> = ({
                 className="ml-6 inline mb-4 w-auto p-2 border border-gray-300 rounded"
                 {...register("end_date")}
               />
-            </>
+            </> */}
             {isLoading ? (
               <span className="mt-4 w-full rounded-md bg-black px-20  py-2 text-white border font-semibold text-md">
                 Submitting...
@@ -398,7 +350,7 @@ const ModalComponent: React.FC<PorpsType> = ({
                 Submit{" "}
               </button>
             )}
-            {isGoingonchain && !isLoading && (
+            {isLoading && (
               <p className="text-sm text-slate-500">
                 uploading to blockchain... Please wait...
               </p>
