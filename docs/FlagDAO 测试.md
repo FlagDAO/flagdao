@@ -1,8 +1,10 @@
-#### 先别管样式问题，先完成 Roadmap 里的核心功能
+**先别管样式问题，先完成 Roadmap 里的核心功能**
 
 需求优先级：
 
-- [ ] 前端调用合约的 BUG
+- [x] 前端调用合约的 BUG  - 10.13
+- [ ] create flag 加一个 × 关闭
+- [ ] 前端授权 token，再 claim flag
 - [ ] 加一个 claim token 按钮？
 
 
@@ -74,21 +76,6 @@
 
 
 
-### Token constructor：
-
-￥399  ->    10000 `$LTT`
-
-
-10000
-Co-Learn Token
-`$LT`
-
-
-
--------
-
-
-
 
 
 ### 合约测试
@@ -100,11 +87,10 @@ Co-Learn Token
 Token 地址： 
 
 ```bash
-LT 
-["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98"]
+["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98","0xD17BA0e9886aF3d2CF876f88Af69FEABb0010FC5"]
 
 Deploy address :
-  0x996Ec90e8071217A834eBa3aFCEfB2DB2F0EF27e
+  0x9D5080322FB0Af1fcC6E6674754CA0298d4B31b0
 ```
 
 2. 部署 FlagDAO.sol
@@ -112,13 +98,13 @@ Deploy address :
 ```bash
 # _Token
 如上
-# _OWNERS
-["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98"]
+# _OWNERS   (多签 Contract Owners)
+["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98","0xD17BA0e9886aF3d2CF876f88Af69FEABb0010FC5"]
 # _NUMCONFIRMATIONSREQUIRED
 1
 
 FlagDAO depoly at:  
-  0x711014801Ab7fB9d3C956077b04f1909C09270c3
+  0xD06f231b9f2eec96Cde92C6A6CaB27F5a8a05c17
 ```
 
 
@@ -151,20 +137,20 @@ amount: 10000  # 每人授权 FlagDAO 可以动用 10000 枚 token （方便测�
   id: 0,
   flager address: 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4,
   goal: 今晚完成作业,
-  self_pledged: 20000000000000000000,  // 20000000000000000000 == 20* 10**18
+  self_pledged: 20,  // In contract: 20000000000000000000 == 20* 10**18
   bettors_pledged: 0,
   flag_status: false,
   claimed: false
 }
 
 今晚分享 Semaphore
-20000000000000000000  # 20 token
+20  # 20 token
 
 今晚上号上到冠绝一世 10000 分！
-100000000000000000000  # 100 token
+10  # 100 token
 
 今晚怒赚它一个小目标！！
-1000000000000000000000  # 1000 token
+100  # 1000 token
 ```
 
 
@@ -224,9 +210,9 @@ ERC-20 用户余额测试：
 
 
 
+### Tips
 
-
-### 前端+合约交互过程...
+**前端+合约交互过程...**
 
 1. 前端把所有的数值都 × `10 ** 18`
    1. 在链上进行转换需要消耗更多的gas。
@@ -236,74 +222,7 @@ ERC-20 用户余额测试：
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-### FlagDAO Deploy：
-
-**ERC-20 合约地址 ：** 如上                             
-
-["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F"]                         (多签 Contract Owners)
-
-
-
-FlagDAO 部署之后，ERC-20 Token 要授权给 FlagDAO 合约地址 `0xc7712D2FeEf05619269963A7D00baeFE8EDE6AEA` 足够大的额度。
-
-
-
-### **approveBatch**
-
-["0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F","0xab6Abd1177a962036DE7EBa695983c284100F61a","0x8976CF0CE595507d5A0F7Cc338BeC94C52524B98"]
-
-FlagDAO 合约地址
-
-
-
-
-#### launch
-0x5B38Da6a701c568545dCfcB03FcB875f56beddC4：
-在共学期间，使用 Rust 构建一个小型区块链。
-500
-1685156971
-1686971371
-
-
-
-
-
-
-
-
-
-### CHat
-
-```
-用 Typescript React +Tailwind  实现一个弹出的 Modal ，
-要求：
-1. 点击 Create button 后触发
-2. Modal 里包含 3 个 input，各占一行，分别是 goal(string), pledge_amt(Number), startAt(Number)
-3. 三个 input 下面是一个 居中的 Submit 按钮，做的美观好看一些，加一些渐变、阴影
-3. 点击 Modal 外的区域自动关闭该 Modal
-4. 整体做的美观好看一些，加一些渐变、阴影
-```
-
-
-
-
-
-
-
-# Flag
+### Flags...
 
 鸡蛋 Egg(Test)
 
@@ -331,23 +250,9 @@ Keep
 
 
 
-### 社区测试
-
-#### 1. 发 `$LT` 立 Flag
-
-比如十一的钱包：0x4bbd2A03A0aD7449EB273f4385cE25E9D2c8D8fE
-
-1. 先 import ERC-20 合约地址
-2. **addTokens()**
-3. approveBatch:
-   1. whitelist: ["0x4bbd2A03A0aD7449EB273f4385cE25E9D2c8D8fE"]
-   2. spender: Flag 合约
 
 
-
-
-
-文案：
+### 文案：
 
 Done，给了 1000 $LT 
 Mumbai 合约地址：0xc7712D2FeEf05619269963A7D00baeFE8EDE6AEA
@@ -363,9 +268,19 @@ Flag 完成或者 Rug 后，都可以再次 Claim 你的收益
 
 
 
+### Chat/Prompts
+
+```
+用 Typescript React +Tailwind  实现一个弹出的 Modal ，
+要求：
+1. 点击 Create button 后触发
+2. Modal 里包含 3 个 input，各占一行，分别是 goal(string), pledge_amt(Number), startAt(Number)
+3. 三个 input 下面是一个 居中的 Submit 按钮，做的美观好看一些，加一些渐变、阴影
+3. 点击 Modal 外的区域自动关闭该 Modal
+4. 整体做的美观好看一些，加一些渐变、阴影
+```
 
 
-### 合约 Prompt
 
 > 这个是杠杆的分钱逻辑，暂时弃用
 
@@ -375,10 +290,12 @@ Flag 完成或者 Rug 后，都可以再次 Claim 你的收益
 - 然后用户 b 和 c 下注的是分别是 1 美元和 9 美元，他们下注的是 flag_1 - Failed
 
 用户身份：
+
 - 用户 a 是 flag 的承诺人，通常只有 1 个，他自己质押 flag_1 的状态为 Done 来激励自己，克服拖延
 - 用户 b、c、d ... 是 flag 的对赌人，通常可以是 0 ~ n  (n 无上限)，对赌人赌 flag 的状态是 Failed
 
 这个游戏是这么玩的，每个 flag 都有 2 种状态：Done 和 Failed：
+
 1. 假如 flag_1 最后的状态是 Done。那么用户 a 拿走所有对赌用户的钱，比如在上面这个例子中，他就把 b 和 c 的 1 美元和 9 美元都拿走了
 2. 假如 flag_1 最后的状态是 Failed ，那么用户 a 的赌注就会被所有的投注用户瓜分，这里引入一个杠杆，假设杠杆率设置为 5，那么用户 b 就能拿走 1×5=5 美元，用户 c 就能拿走 9×5 = 45 美元。剩下的100 - 5 - 45 = 50 美元进入到国库。
 3. 在 状态是 Failed 场景中，即使对赌用户投注的钱再多，他最多只能拿走不超过 100 美元的奖励。

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Modal from "react-modal"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { supabaseKey, supabaseUrl } from "./env"
@@ -52,64 +52,97 @@ const ModalComponent: React.FC<PorpsType> = ({
   const [pledgement, setPledgement] = useState<number>()
   const _goal = useDebounce(goal, 500)
   const _pledgement = useDebounce(pledgement, 500)
+  const [name, setName] = useState<string>()
+  const [isOnchain, setIsOnchain] = useState<string>();
+  const [goalType, setGoalType] = useState<string>();
+
+  const nameRef = useRef<string | undefined>('');
+  nameRef.current = name;
+
+  const goalRef = useRef<string | undefined>('');
+  goalRef.current = _goal;
+
+  const pledgementRef = useRef<number | undefined>();
+  pledgementRef.current = _pledgement;
+
+  const goalTypeRef = useRef<string | undefined>('');
+  goalTypeRef.current = goalType;
 
   const [onChain, setOnChain] = useState(true)
   // const [flagId, setFlagId] = useState<any | undefined>();
-  const [data, setData] = useState<Inputs>()
-  const _data = useDebounce(data, 500)
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<Inputs>()
+  const { register, handleSubmit, watch, formState: { errors },} = useForm<Inputs>()
+
+
+  // useEffect(() => {
+  //   setPledgement(watch("pledgement"))
+  //   setGoal(watch("goal"))
+  //   setName(watch("name"))
+  //   // console.log("goal, pledgement: ", goal, pledgement)
+  // }, [watch("name"), watch("pledgement"), watch("goal")])
 
   useEffect(() => {
-    setPledgement(watch("pledgement"))
-    setGoal(watch("goal"))
-    console.log("goal, pledgement: ", goal, pledgement)
-  }, [watch("pledgement"), watch("goal")])
+    setIsOnchain(watch("isOnchain"));
+    setName(watch("name"));
+    setGoal(watch("goal"));
+    setPledgement(watch("pledgement"));
+    setGoalType(watch("goal_type"));
+  }, [watch("isOnchain"), watch("name"), watch("goal"), watch("pledgement"), watch("goal_type")]);
 
 
+  // before transfer money to contract, you need to approve the contract allowance.
+  const { config: config_erc } = usePrepareContractWrite({
+    address: ERC20_CONTRACT_ADDR,
+    abi: ercABI,
+    chainId: chain?.id,
+    functionName: "approve",
+    args: [FLAGDAO_CONTRACT_ADDR, _pledgement ?? 0 ], // no need to ** 18, cause in contract it has been.
+    enabled: Boolean(_pledgement),
+  })
+  const { data: erc_approve_res, isSuccess, write: erc20_approve, error: erc_error } = useContractWrite(config_erc)
+  // console.log("erc20_approve isSuccess", isSuccess)
+
+  // launch function to transfer money to contract.
   const { config } = usePrepareContractWrite({
     address: FLAGDAO_CONTRACT_ADDR,
     abi: contractABI,
     chainId: chain?.id,
     functionName: "launch",
-    args: [_goal, _pledgement],
+    args: [_goal, _pledgement ?? 0 ], // no need to ** 18
     enabled: Boolean(_pledgement),
   })
+
   const { data: res, isLoading, write, error } = useContractWrite(config)
   // console.log("write() function:", write);  if Metamask can't be called, check it.
 
-
   const onSubmit: SubmitHandler<Inputs> = async (data, e) => {
-    write?.();
-    console.log("submitting & write?.() to blockchain...")
-    setData(data)
+    e?.preventDefault();
+    try {
+      await erc20_approve?.() // ERC-20 approve
+      await write?.();   // transfer ERC-20 token to `flag.sol` contract.
+    }
+    catch (error) { console.error("onSubmit async An error occurred:", error); }
   }
-  // console.log("submit data", data)
-  
+  console.log("...others", name,address,_goal,_pledgement,goalType)
+
   const postToBackendDatabase = async (flag_id: number) => {
-    if (_data) { // if (_data && onChain && typeof flagId !== "undefined") {
-      console.log("postToBackendDatabase(), flag_id: ", flag_id)
+    // if (_data) { // if (_data && onChain && typeof flagId !== "undefined") {
+      console.log("postToBackendDatabase(), flag_id and others: ", flag_id, nameRef.current,address, goalRef.current , pledgementRef.current, goalTypeRef.current )
       const { error, data: res } = await supabase.from("flag").insert([
         {
           flagID: Number(flag_id), // whereas `TypeError: Do not know how to serialize a BigInt`
-          name: _data.name,
-          address: _data.address,
-          goal: _data.goal,
-          amt: _data.pledgement,
-          goalType: _data.goal_type,
+          name: name,
+          address: address,
+          goal: _goal,
+          amt: _pledgement,
+          goalType: goalType,
           onChain,
-          startAt: _data.start_date === "" ? null : _data.start_date,
-          endAt: _data.end_date === "" ? null : _data.end_date,
+          // startAt: _data.start_date === "" ? null : _data.start_date,
+          // endAt: _data.end_date === "" ? null : _data.end_date,
         },
       ]).select()
       console.log("postToBackendDatabase res", res)
       console.log("postToBackendDatabase error", error)
-    }
   }
 
   // Listen Event, when on-chain contract successes, execute it to post backend database.
@@ -119,26 +152,12 @@ const ModalComponent: React.FC<PorpsType> = ({
     eventName: "Launch",
     listener(log: any) {
       console.log("log[0].args.id.....", log[0])
-      setFlagId(log[0].args.id)
       postToBackendDatabase(log[0].args.id) // pass in the flag_id.
     },
   })
 
   function openModal() { setIsOpen(true) }
   function closeModal() { setIsOpen(false) }
-
-  // // 这里暂时有一个小 Bug, 每次页面刷新都会尝试将 flag 写入后端, 不过因为 flagID 不能重复,
-  // // 所以每次写入都会失败, 虽然不影响运行, 但是看起来丑丑的.
-  // useEffect(() => {
-  //   postFlag()
-  //   fetchFlags()
-  //   console.log("flagID is ", flagId, "postFlag() will excute again..")
-  // }, [flagId])
-
-  // Close modal...
-  // function handleSubmit() {
-  //   closeModal();
-  // }  // 好像没用到?
 
   return (
     <div className="flex justify-center items-center">
@@ -155,15 +174,21 @@ const ModalComponent: React.FC<PorpsType> = ({
         className="flex items-center justify-center w-full h-full"
         overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
       >
-        <div className="bg-slate-50 rounded-lg shadow-lg w-2/5 py-10 px-20">
+        <div className="relative bg-slate-50 rounded-lg shadow-lg w-2/5 py-10 px-20">
+          <button 
+            onClick={closeModal}
+            className="absolute top-4 right-4 p-2"
+            style={{ cursor: 'pointer' }}
+          >
+            <span role="img" aria-label="Close" className="text-3xl font-bold"> ×</span>
+          </button>
           <h3 className="text-2xl mb-4 text-center font-black">
-            Create your Flag!
+            create your FLAG!
           </h3>
 
           {/* "handleSubmit" will validate your inputs before invoking "onSubmit" */}
           <form onSubmit={handleSubmit((e) =>  onSubmit(e))}>
             {/* register your input into the hook by invoking the "register" function */}
-
             <label className="block text-gray-700 font-bold">
               * OnChain or not:
             </label>

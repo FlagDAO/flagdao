@@ -16,11 +16,15 @@ contract FlagDAO {
         // uint32 startAt,
         // uint32 endAt
     );
+
     event Cancel(uint id);
     event Pledge(uint indexed id, address indexed caller, uint amount);
     event Unpledge(uint indexed id, address indexed caller, uint amount);
-    event Claim(uint id, address flager, uint amt);
-    event Refund(uint id, address indexed caller, uint amount);
+    event Claim_For_bettors(uint id, address caller, address bettor, uint share, uint betValue, uint maxReward, uint totalPledge);
+    event Claim_For_Flager(uint _id, address caller, uint value);
+    // event Refund(uint id, address indexed caller, uint amount);
+
+    uint8 public decimals = 18;
 
     /* Multi sig Part - START*/
     address[] public owners;
@@ -32,7 +36,7 @@ contract FlagDAO {
     mapping(uint => mapping(address => bool)) public isConfirmed;
 
     uint256 constant MAX_LEVERAGE = 20;
-    // uint256 constant DECIMAL_MULTIPLIER = 10**18; 
+    // uint256 constant DECIMAL_MULTIPLIER = 10**18;
 
     modifier onlyOwner() {  // 只有 多签的所有者们 可以调用下面的东西.
         require(isOwner[msg.sender], "not owner");
@@ -109,7 +113,7 @@ contract FlagDAO {
             id: count,
             flager: msg.sender,
             goal: _goal,
-            self_pledged: _init_pledged,
+            self_pledged: _init_pledged * (10 ** uint256(decimals)),
             bettors_pledged: 0,
             // startAt: _startAt,
             // endAt: _endAt,
@@ -117,7 +121,7 @@ contract FlagDAO {
             claimed: false
         });
 
-        token.transferFrom(msg.sender, address(this), _init_pledged);
+        token.transferFrom(msg.sender, address(this), _init_pledged * (10 ** uint256(decimals)));
         // token.transfer(address(this), _init_pledged );  Not correct!!!
         flags.push(_flag);
         // emit Launch(count, msg.sender, _startAt, _endAt);
@@ -136,8 +140,35 @@ contract FlagDAO {
         emit Cancel(_id);
     }
 
+    // function clearAllFlags() external onlyOwner {
+    //     // Loop through all flags and refund tokens
+    //     for (uint i = 0; i < flags.length; i++) {
+    //         Flag storage flag = flags[i];
+
+    //         // Refund self_pledged amount to the flager
+    //         if(flag.self_pledged > 0){
+    //             token.transfer(flag.flager, flag.self_pledged);
+    //         }
+
+    //         // Refund bettors
+    //         if(flag.bettors_pledged > 0){
+    //             for(uint j = 0; j < bettors[flag.id].keys.length; j++) {
+    //                 address bettor = bettors[flag.id].keys[j];
+    //                 uint amount = bettors[flag.id].values[j];
+    //                 if(amount > 0){
+    //                     token.transfer(bettor, amount);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     // Delete all flags
+    //     delete flags;
+    // }
+
+
     function pledge(uint _id, uint _amt) external {
-        uint256 _amount = _amt;
+        // uint256 _amount = _amt;
+        uint256 _amount = _amt * (10 ** uint256(decimals));  // no need...?
         Flag storage flag = flags[_id];   // storage: 存储在链上
         // require(block.timestamp >= flag.startAt, "not started");
         // require(block.timestamp <= flag.endAt, "ended");
@@ -158,7 +189,7 @@ contract FlagDAO {
 
     // 取回部分投注
     function unpledge(uint _id, uint _amt) external {
-        uint256 _amount = _amt;
+        uint256 _amount = _amt * (10 ** uint256(decimals));
         Flag storage flag = flags[_id];
         // require(block.timestamp <= flag.endAt, "ended");
 
@@ -208,155 +239,154 @@ contract FlagDAO {
         }
     }
 
-    // Flag done, 将 bettors 中所有的质押 Token 全都转给 flager.  自己质押的 Token 也 retrieve
-    // [param] _id: Flag id.
-    function redeemTokensForFlager(uint _id) internal  {
-        Flag storage flag = flags[_id];
-        // require(flag.flager == msg.sender, "only flager can retrive it!");
-        require(flag.flag_status, "As flager, the flag must be done to claim.");
-        require(!flag.claimed, "Already claimed, the flag's status can't be changed again.");
-        // require(block.timestamp > flag.endAt, "flag duration not ended");
+        // Flag done, 将 bettors 中所有的质押 Token 全都转给 flager.  自己质押的 Token 也 retrieve
+        // [param] _id: Flag id.
+        function redeemTokensForFlager(uint _id) internal  {
+            Flag storage flag = flags[_id];
+            // require(flag.flager == msg.sender, "only flager can retrive it!");
+            require(flag.flag_status, "As flager, the flag must be done to claim.");
+            require(!flag.claimed, "Already claimed, the flag's status can't be changed again.");
+            // require(block.timestamp > flag.endAt, "flag duration not ended");
 
-        uint betValue = 0;
+            uint betValue = 0;
 
-        for(uint i = 0; i < bettors[_id].size(); i++) {
-            address key = bettors[_id].getKeyAtIndex(i);
-            betValue += bettors[_id].get(key);
-        }
+            for(uint i = 0; i < bettors[_id].size(); i++) {
+                address key = bettors[_id].getKeyAtIndex(i);
+                betValue += bettors[_id].get(key);
+            }
 
-        token.transfer(flag.flager, flag.self_pledged + betValue);
+            token.transfer(flag.flager, flag.self_pledged + betValue);
 
-        flag.claimed = true;
-
-        emit Claim(_id, flag.flager, betValue + flag.self_pledged);
-    }
-
-    // Flag Failed, bettors 瓜分质押 Tokens .
-    // [TODO] how to prevent double-claim (重复赎回) ?
-    function calBettorsrTotal (uint256 _id) internal view  returns (uint256 ) {
-        uint totalPledge = 0;
-        uint betValue = 0;
-        for (uint i = 0; i < bettors[_id].size(); i++) {
-            address bettor = bettors[_id].getKeyAtIndex(i);
-            betValue = bettors[_id].get(bettor);
-            totalPledge += betValue;
-        }
-        return totalPledge;
-    }
-
-    function redeemTokensForBettors(uint _id) internal  {
-
-        Flag storage flag = flags[_id];
-
-        require(!flag.claimed, "Already claimed!");
-        require(!flag.flag_status, "Flag must be 'failed' to distribute pledges");
-        // require(block.timestamp > flag.endAt, "flag duration not ended");
-        // require(bettors[_id].size() > 0, "No bettors for the flag!");   No need!!
-
-        // If there is no bettors(counterparty), the pledge amount of flager will enter the DAO treasury.
-        if(bettors[_id].size() == 0) {
             flag.claimed = true;
-            return ;
+
+            emit Claim_For_Flager(_id, flag.flager, betValue + flag.self_pledged);
         }
 
-        // calculate bettors' totalPledge.
-        // e.g. bettor A bets $2, bettor B bets $10, then  totalPledge = $12
-        uint betValue = 0;
-        uint totalPledge = calBettorsrTotal(_id);
-
-        /*  // distribute the flager's self_pledged
-        betValue = bettors[_id].get(msg.sender);
-        require(betValue > 0, "You didn't pledge it or already claimed your part.");  */
-
-        for (uint i = 0; i < bettors[_id].size(); i++) {
-            address bettor = bettors[_id].getKeyAtIndex(i);
-            betValue = bettors[_id].get(bettor);
-            uint maxReward = betValue * MAX_LEVERAGE;
-            
-            // bettor A : 2/12 * 100
-            // bettor B : 10/12 * 100
-            uint share = (betValue / totalPledge) * flag.self_pledged ;
-            
-            // Maximum leverage 
-            maxReward = share > maxReward ? maxReward : share;
-
-            token.transfer(bettor, betValue); // 取回质押的本金
-            token.transfer(bettor, share);    // 按比例瓜分 flager 赏金
-            
-            // bettors[_id].set(bettor, 0);
-
-            emit Claim(_id, msg.sender, share + betValue);
+        // Flag Failed, bettors 瓜分质押 Tokens .
+        // [TODO] how to prevent double-claim (重复赎回) ?
+        function calBettorsrTotal (uint256 _id) internal view  returns (uint256) {
+            uint totalPledge = 0;
+            uint betValue = 0;
+            for (uint i = 0; i < bettors[_id].size(); i++) {
+                address bettor = bettors[_id].getKeyAtIndex(i);
+                betValue = bettors[_id].get(bettor);
+                totalPledge += betValue;
+            }
+            return totalPledge;
         }
-        flag.claimed = true;
-    }
 
-    /* ******************
-    ***  get helpers ****
-    ********************* */
+        function redeemTokensForBettors(uint _id) internal  {
 
-    // 分页获取 flags 数组:
-    // 0,2  will return the flags[0] and flags[1].
-    function getFlags(uint startIndex, uint endIndex) public view returns (Flag[] memory) {
-        require(startIndex < endIndex, "startIndex > endIndex.");
-        require(endIndex <= flags.length, "No flags now.");
-        
-        Flag[] memory flagSlice = new Flag[](endIndex - startIndex);
-        
-        for (uint i = startIndex; i < endIndex; i++) {
-            flagSlice[i - startIndex] = flags[i];
+            Flag storage flag = flags[_id];
+
+            require(!flag.claimed, "Already claimed!");
+            require(!flag.flag_status, "Flag must be 'failed' to distribute pledges");
+            // require(block.timestamp > flag.endAt, "flag duration not ended");
+            // require(bettors[_id].size() > 0, "No bettors for the flag!");   No need!!
+
+            // If there is no bettors(counterparty), the pledge amount of flager will enter the DAO treasury.
+            if(bettors[_id].size() == 0) {
+                flag.claimed = true;
+                return ;
+            }
+
+            // calculate bettors' totalPledge.
+            // e.g. bettor A bets $2, bettor B bets $10, then  totalPledge = $12
+            uint betValue = 0;
+            uint totalPledge = calBettorsrTotal(_id);
+
+            /*  // distribute the flager's self_pledged
+            betValue = bettors[_id].get(msg.sender);
+            require(betValue > 0, "You didn't pledge it or already claimed your part.");  */
+            for (uint i = 0; i < bettors[_id].size(); i++) {
+                address bettor = bettors[_id].getKeyAtIndex(i);
+                betValue = bettors[_id].get(bettor);
+                uint maxReward = betValue * MAX_LEVERAGE; // 2 * 20 = 40
+                
+                // bettor A : 2/12 * 100
+                // bettor B : 10/12 * 100
+                // Solidity 向下取整，所以先算除法会导致 = 0
+                uint share = flag.self_pledged * betValue / totalPledge;
+                
+                // Maximum leverage 
+                maxReward = share > maxReward ? maxReward : share;
+
+                // 瓜分 flager 赏金
+                token.transfer(bettor, maxReward); 
+
+                // bettors[_id].set(bettor, 0);
+                emit Claim_For_bettors(_id, msg.sender, bettor, share, betValue, maxReward, totalPledge);
+            }
+            flag.claimed = true;
         }
-        
-        return flagSlice;
-    }
 
-    function getAllFlags() public view returns (Flag[] memory) {
-        require(flags.length > 0, "No flags now.");
-        // Flag[] memory flagSlice  = new Flag[](flags_arr.length);        
-        // for (uint i = 0; i < flags_arr.length; i++) {
-        //     flagSlice[i] = flags_arr[i];
+        /* ******************
+        ***  get helpers ****
+        ********************* */
+
+        // 分页获取 flags 数组:
+        // 0,2  will return the flags[0] and flags[1].
+        function getFlags(uint startIndex, uint endIndex) public view returns (Flag[] memory) {
+            require(startIndex < endIndex, "startIndex > endIndex.");
+            require(endIndex <= flags.length, "No flags now.");
+            
+            Flag[] memory flagSlice = new Flag[](endIndex - startIndex);
+            
+            for (uint i = startIndex; i < endIndex; i++) {
+                flagSlice[i - startIndex] = flags[i];
+            }
+            
+            return flagSlice;
+        }
+
+        function getAllFlags() public view returns (Flag[] memory) {
+            require(flags.length > 0, "No flags now.");
+            // Flag[] memory flagSlice  = new Flag[](flags_arr.length);        
+            // for (uint i = 0; i < flags_arr.length; i++) {
+            //     flagSlice[i] = flags_arr[i];
+            // }
+            // return flagSlice;
+            return flags;
+        }
+
+        function getBettor(uint _id, address addr) public view returns (uint) {
+            return bettors[_id].get(addr);
+        }
+
+        // function getTotalBet(uint _id) public view returns (uint) {
+        //     uint totalPledge = 0;
+        //     uint betValue = 0;
+
+        //     // calculate totalPledge.
+        //     for (uint i = 0; i < bettors[_id].size(); i++) {
+        //         address bettor = bettors[_id].getKeyAtIndex(i);
+        //         betValue = bettors[_id].get(bettor);
+        //         totalPledge += betValue;
+        //     }
+        //     return totalPledge;
         // }
-        // return flagSlice;
-        return flags;
-    }
 
-    function getBettor(uint _id, address addr) public view returns (uint) {
-        return bettors[_id].get(addr);
-    }
+        function getBettors(uint _id) public view returns (address[] memory) {
+            address[] memory addr_lis = new address[](bettors[_id].size());
 
-    function getTotalBet(uint _id) public view returns (uint) {
-        uint totalPledge = 0;
-        uint betValue = 0;
-
-        // calculate totalPledge.
-        for (uint i = 0; i < bettors[_id].size(); i++) {
-            address bettor = bettors[_id].getKeyAtIndex(i);
-            betValue = bettors[_id].get(bettor);
-            totalPledge += betValue;
+            // calculate totalPledge.
+            for (uint i = 0; i < bettors[_id].size(); i++) {
+                address bettor = bettors[_id].getKeyAtIndex(i);
+                addr_lis[i] = bettor;
+            }
+            return addr_lis;
         }
-        return totalPledge;
-    }
+        
+        function getBettorsPledgement(uint _id) public view returns (uint[] memory) {
+            uint[] memory value_lis = new uint[](bettors[_id].size());
 
-    function getBettors(uint _id) public view returns (address[] memory) {
-        address[] memory addr_lis = new address[](bettors[_id].size());
+            // calculate totalPledge.
+            for (uint i = 0; i < bettors[_id].size(); i++) {
+                address bettor = bettors[_id].getKeyAtIndex(i);
+                uint val = bettors[_id].get(bettor);
+                value_lis[i] = val;
+            }
 
-        // calculate totalPledge.
-        for (uint i = 0; i < bettors[_id].size(); i++) {
-            address bettor = bettors[_id].getKeyAtIndex(i);
-            addr_lis[i] = bettor;
+            return value_lis;
         }
-        return addr_lis;
     }
-    
-    function getBettorsPledgement(uint _id) public view returns (uint[] memory) {
-        uint[] memory value_lis = new uint[](bettors[_id].size());
-
-        // calculate totalPledge.
-        for (uint i = 0; i < bettors[_id].size(); i++) {
-            address bettor = bettors[_id].getKeyAtIndex(i);
-            uint val = bettors[_id].get(bettor);
-            value_lis[i] = val;
-        }
-
-        return value_lis;
-    }
-}

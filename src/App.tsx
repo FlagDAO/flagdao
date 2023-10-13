@@ -90,9 +90,9 @@ const App = () => {
 
   // const { connector } = useAccount(); // Metamask
   // console.log("chainId, address", chainId, address)
-  console.log("data", data)
-  console.log("curFromChild", curFromChild)
-  console.log("darr", darr)
+  // console.log("data", data)
+  // console.log("curFromChild", curFromChild)
+  // console.log("darr", darr)
 
   /*
   取数据暂时不从 Contract 拿了, 从后端拿
@@ -107,10 +107,6 @@ const App = () => {
   function handleValueChange(value: any) {
     setCurFromChild(value)
   }
-
-  // console.log("isError", error);
-  // console.log("data..", data);
-  // console.log("data..", (data as { goal: string }[])[0]?.goal);
 
   return (
     <div className="w-full mx-auto md:w-7/12 bg-white">

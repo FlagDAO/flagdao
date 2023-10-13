@@ -43,16 +43,18 @@ contract ERC20 is IERC20 {
 
     // @dev 实现`transfer`函数，代币转账逻辑
     function transfer(address recipient, uint amount) external override returns (bool) {
-        balanceOf[msg.sender] -= amount;
-        balanceOf[recipient] += amount;
-        emit Transfer(msg.sender, recipient, amount);
+        uint256 amt = amount * (10 ** uint256(decimals));
+        balanceOf[msg.sender] -= amt;
+        balanceOf[recipient] += amt;
+        emit Transfer(msg.sender, recipient, amt);
         return true;
     }
 
     // @dev 实现 `approve` 函数, 代币授权逻辑
     function approve(address spender, uint amount) external override returns (bool) {
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
+        uint256 amt = amount * (10 ** uint256(decimals));
+        allowance[msg.sender][spender] = amt;
+        emit Approval(msg.sender, spender, amt);
         return true;
     }
 
@@ -62,25 +64,27 @@ contract ERC20 is IERC20 {
         address recipient,
         uint amount
     ) external override returns (bool) {
-        allowance[sender][msg.sender] -= amount;
-        balanceOf[sender] -= amount;
-        balanceOf[recipient] += amount;
-        emit Transfer(sender, recipient, amount);
+        uint256 amt = amount * (10 ** uint256(decimals));
+        allowance[sender][msg.sender] -= amt;
+        balanceOf[sender] -= amt;
+        balanceOf[recipient] += amt;
+        emit Transfer(sender, recipient, amt);
         return true;
     }
 
     // @dev 铸造代币，从 `0` 地址转账给 调用者地址
     function mint(uint amount) external {
-        balanceOf[msg.sender] += amount;
-        totalSupply += amount;
-        emit Transfer(address(0), msg.sender, amount);
+        uint256 amt = amount * (10 ** uint256(decimals));
+        balanceOf[msg.sender] += amt;
+        totalSupply += amt;
+        emit Transfer(address(0), msg.sender, amt);
     }
 
     // @dev 销毁代币，从 调用者地址 转账给  `0` 地址
     function burn(uint amount) external {
-        balanceOf[msg.sender] -= amount;
-        totalSupply -= amount;
-        emit Transfer(msg.sender, address(0), amount);
+        uint256 amt = amount * (10 ** uint256(decimals));
+        balanceOf[msg.sender] -= amt;
+        totalSupply -= amt;
+        emit Transfer(msg.sender, address(0), amt);
     }
-
 }
