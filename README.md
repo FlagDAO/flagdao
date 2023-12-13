@@ -11,6 +11,7 @@ $ yarn run dev
 
 
 # FlagDAO
+
 FlagDAO 是一个为爱立 Flag 星人准备的 DAO，在本 DAO 中，每个人都有他自己的 Flag，每个人都想实现他的 Flag，每个人都会为其 Flag 进行质押，或者尝试判断别人的 Flag 什么时候倒 （：  
 
 我们的共识是：  
@@ -19,29 +20,26 @@ FlagDAO 是一个为爱立 Flag 星人准备的 DAO，在本 DAO 中，每个人
 2. 嘻嘻哈哈围观他人
 
 
+<img width="933" alt="image" src="https://github.com/FlagDAO/flagdao/assets/33189338/852ad852-c0e0-432b-bf1c-666b6ac1950c">
 
-![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2023-09-04-IMG_0856.jpg)
 
-
-应用场景、组织：
+### 应用场景、组织：
 
 - co-learn Group
    - 学习成果、分享的承诺
 - DAO organization
    - DAO 内事务防 flop，防止 claim 了预付资金后项目烂尾的情况。  
+- 场景非常多，大到项目方分批 milestone 解锁 investment，小到 lxdao 社区一直在提的质押早起
 
-判断 flag 交付物：
+### 判断 flag 交付物
+-  —— 给可信任第三方评估，因为 flag 的完成是个机器人没法识别的事件
 - DAO 受信任，有声望的多签 holder 来评价 flag 的完成情况
 - DAO 治理来评估涌现项目的加成比例。
 
-针对成员
 
 权限问题：
 
 - 组织审核 flag 的可交付性、是否有分享的价值，是否对组织发展有利。
-
-
-
 
 
 
