@@ -7,7 +7,8 @@ $ yarn run dev
 # Team
 - @孝羽、@大力 Lee ： idea provider
 - @Demian：frontend、Contract dev
-- @Logic Frontend 
+- @Logic Frontend
+- Secbit 郭老师, 早期 Founder
 
 
 # FlagDAO
