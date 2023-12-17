@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import Modal from "react-modal"
 import { useForm, SubmitHandler } from "react-hook-form"
-import { supabaseKey, supabaseUrl } from "./env"
+import { supabaseKey, supabaseUrl } from "./utils/credentials"
 import { createClient } from "@supabase/supabase-js"
 import {
   useContractWrite,
@@ -13,12 +13,37 @@ import {
 import {
   FLAGDAO_CONTRACT_ADDR,
   contractABI,
-  ERC20_CONTRACT_ADDR,
-  ercABI,
 } from "./utils/constants"
 import useDebounce from "./usehooks"
 
 // Modal.setAppElement('#root');  // 这行代码应该在你的App根元素上
+
+import {email, password} from "./utils/credentials"
+
+import { Akord, Auth, NFTMetadata } from "@akord/akord-js";
+console.log("email, password", email, password);
+const { wallet, jwt } = await Auth.signIn(email, password);
+const akord = await Akord.init(wallet);
+const vaultId: string = "MVCubhFGdWwrlRq_p_yvYOHvCCcs0agMl0Cc1oFPMY8"
+const manifestNode = await akord.manifest.get(vaultId);
+
+const nftMetadata: NFTMetadata = {
+  name: "Golden Orchid - Flora Fantasy #1",
+  creator: "xxxx",
+  owner: "yyyy", // should be a valid Arweave address
+  collection: "Flora Fantasy",
+  description: "A rare digital representation of the mythical Golden Orchid",
+  type: "image",
+  topics: ["floral", "nature"]
+};
+
+// 假设您有一段要转换的文本
+const text = "这是一段文本";
+// 创建一个新的 Blob 对象，它是 File 接口的基础
+const blob = new Blob([text], { type: 'text/plain' });
+// 使用 Blob 对象创建一个 File 对象
+const file = new File([blob], "example.txt", { type: 'text/plain' });
+
 
 type Inputs = {
   isOnchain: string
@@ -36,7 +61,7 @@ type PorpsType = {
   setFlagId: Function
   fetchFlags: Function
 }
-
+console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 const ModalComponent: React.FC<PorpsType> = ({
@@ -73,6 +98,9 @@ const ModalComponent: React.FC<PorpsType> = ({
 
   const { register, handleSubmit, watch, formState: { errors },} = useForm<Inputs>()
 
+  const [nftId, setNftId] = useState<string | null>(null); // 存储 mint 后的 nftId
+
+  console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
 
   // useEffect(() => {
   //   setPledgement(watch("pledgement"))
@@ -90,16 +118,16 @@ const ModalComponent: React.FC<PorpsType> = ({
   }, [watch("isOnchain"), watch("name"), watch("goal"), watch("pledgement"), watch("goal_type")]);
 
 
-  // before transfer money to contract, you need to approve the contract allowance.
-  const { config: config_erc } = usePrepareContractWrite({
-    address: ERC20_CONTRACT_ADDR,
-    abi: ercABI,
-    chainId: chain?.id,
-    functionName: "approve",
-    args: [FLAGDAO_CONTRACT_ADDR, _pledgement ?? 0 ], // no need to ** 18, cause in contract it has been.
-    enabled: Boolean(_pledgement),
-  })
-  const { data: erc_approve_res, isSuccess, write: erc20_approve, error: erc_error } = useContractWrite(config_erc)
+  // // before transfer money to contract, you need to approve the contract allowance.
+  // const { config: config_erc } = usePrepareContractWrite({
+  //   address: ERC20_CONTRACT_ADDR,
+  //   abi: ercABI,
+  //   chainId: chain?.id,
+  //   functionName: "approve",
+  //   args: [FLAGDAO_CONTRACT_ADDR, _pledgement ?? 0 ], // no need to ** 18, cause in contract it has been.
+  //   enabled: Boolean(_pledgement),
+  // })
+  // const { data: erc_approve_res, isSuccess, write: erc20_approve, error: erc_error } = useContractWrite(config_erc)
   // console.log("erc20_approve isSuccess", isSuccess)
 
   // launch function to transfer money to contract.
@@ -118,7 +146,6 @@ const ModalComponent: React.FC<PorpsType> = ({
   const onSubmit: SubmitHandler<Inputs> = async (data, e) => {
     e?.preventDefault();
     try { 
-      await erc20_approve?.() // ERC-20 approve
       await write?.();   // transfer ERC-20 token to `flag.sol` contract.
     }
     catch (error) { console.error("onSubmit async An error occurred:", error); }
@@ -161,6 +188,24 @@ const ModalComponent: React.FC<PorpsType> = ({
   function openModal() { setIsOpen(true) }
   function closeModal() { setIsOpen(false) }
 
+
+
+
+  const handleMintNft = async () => {
+    if (!file) {
+      console.error('No file selected');
+      return;
+    }
+
+    try {
+      const response = await akord.nft.mint(vaultId, file, nftMetadata);
+      setNftId(response.nftId);
+      console.log('NFT minted with ID:', response.nftId);
+    } catch (error) {
+      console.error('Error minting NFT:', error);
+    }
+  };
+
   return (
     <div className="flex justify-center items-center">
       <button
@@ -194,25 +239,28 @@ const ModalComponent: React.FC<PorpsType> = ({
             <label className="block text-gray-700 font-bold">
               * OnChain or not:
             </label>
-            <select
-              id="countries"
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
-              {...register("isOnchain", { required: true })}
-            >
-              <option
-                defaultValue="onchain"
-                value="onchain"
-                className="border-solid border-gray-300 border py-1 mt-1 px-4 w-full rounded text-gray-700"
+              <select
+                id="countries"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+                {...register("isOnchain", { required: true })}
               >
-                on-chain
-              </option>
-              <option
-                value="offchain"
-                className="border-solid border-gray-300 border py-1 mt-1 px-4 w-full rounded text-gray-700"
-              >
-                off-chain
-              </option>
-            </select>
+                <option
+                  defaultValue="onchain"
+                  value="onchain"
+                  className="border-solid border-gray-300 border py-1 mt-1 px-4 w-full rounded text-gray-700"
+                >on-chain </option>
+                <option
+                  value="offchain"
+                  className="border-solid border-gray-300 border py-1 mt-1 px-4 w-full rounded text-gray-700"
+                >off-chain</option>
+              </select>
+            <>
+              <label className="block text-gray-700 font-bold">1111</label>
+              <button onClick={handleMintNft}>Mint NFT</button>
+              {nftId && <p>NFT ID: {nftId}</p>}            
+            </>
+
+
 
             <>
               <label className="text-gray-700 font-bold block mt-4">

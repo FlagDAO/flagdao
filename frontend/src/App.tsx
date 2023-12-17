@@ -2,7 +2,7 @@ import "./App.css" // 导入你的 CSS 文件，包括自定义的样式类
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 // import Card from
 import Logo from "./components/Logo"
-import { supabaseKey, supabaseUrl } from "./env"
+import { supabaseKey, supabaseUrl } from "./utils/credentials"
 import { createClient } from "@supabase/supabase-js"
 
 import Modal from "react-modal"
@@ -25,12 +25,12 @@ import {
 import {
   contractABI,
   FLAGDAO_CONTRACT_ADDR,
-  ercABI,
-  ERC20_CONTRACT_ADDR,
 } from "./utils/constants"
 import Dropdown from "./components/Dropdown"
 
 Modal.setAppElement("#root") // 这行代码应该在你的App根元素上
+
+
 
 type FormData = {
   goal: string
@@ -53,7 +53,7 @@ export interface CardProps {
   // other properties...
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+
 
 const App = () => {
   const { chains, chain: chainId } = useNetwork()
@@ -62,6 +62,9 @@ const App = () => {
   const [data, setData] = useState<{ [x: string]: any }[] | undefined>()
   const [darr, setDarr] = useState<{ [x: string]: any }[] | undefined>()
   const [flagId, setFlagId] = useState(0)
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
+  console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
 
   const fetchFlags = async () => {
     const { data: res, error } = await supabase.from("flag").select("*")

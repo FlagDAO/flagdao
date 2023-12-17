@@ -3,7 +3,7 @@ import './global.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
-import { mainnet, polygon, optimism, arbitrum,polygonMumbai } from 'wagmi/chains';
+import { mainnet, goerli, polygon, optimism, arbitrum,polygonMumbai } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -11,7 +11,7 @@ import App from './App';
 import "./index.css"
 
 const { chains, publicClient } = configureChains(
-  [polygonMumbai, mainnet, polygon, optimism, arbitrum],
+  [goerli, optimism, mainnet, polygonMumbai, polygon, arbitrum],
   [publicProvider()]
 );
 

@@ -1,6 +1,6 @@
 import { useContractWrite, usePrepareContractWrite, useAccount, useContractEvent} from "wagmi"
 import { createClient } from "@supabase/supabase-js"
-import { supabaseKey, supabaseUrl } from "./env"
+import { supabaseKey, supabaseUrl } from "./utils/credentials"
 import Avatar, { genConfig } from "react-nice-avatar"
 import { getTimeDifference } from "./utils/utils"
 
@@ -24,6 +24,8 @@ const Card: React.FC<CardProps> = (props) => {
   const [id, setId] = useState<Number>(props.flag_id)
   const _id = useDebounce(id, 100)
   const { address } = useAccount()
+   
+   console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
 
   // console.log("created_at", getTimeDifference(props.created_at));
 
@@ -84,7 +86,6 @@ const Card: React.FC<CardProps> = (props) => {
       updateBackend(_id)   // 更新后端 console.log(log)
     },
   })
-
 
   const HoverComponent = () => {
     return (

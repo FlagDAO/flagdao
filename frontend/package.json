@@ -8,10 +8,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@akord/akord-js": "^4.23.6",
+    "@craco/craco": "^7.1.0",
     "@rainbow-me/rainbowkit": "1.1.1",
     "@supabase/supabase-js": "^2.24.0",
     "@types/react-modal": "^3.16.0",
     "buffer": "^6.0.3",
+    "dotenv": "^16.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.44.3",
@@ -19,6 +22,7 @@
     "react-modal": "^3.16.1",
     "react-nice-avatar": "^1.4.0",
     "react-router-dom": "^6.12.0",
+    "react-scripts": "^5.0.1",
     "viem": "^1.16.5",
     "wagmi": "^1.4.3"
   },
