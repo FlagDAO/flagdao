@@ -117,7 +117,7 @@ const ModalComponent: React.FC<PorpsType> = ({
 
   const onSubmit: SubmitHandler<Inputs> = async (data, e) => {
     e?.preventDefault();
-    try {
+    try { 
       await erc20_approve?.() // ERC-20 approve
       await write?.();   // transfer ERC-20 token to `flag.sol` contract.
     }
@@ -125,6 +125,8 @@ const ModalComponent: React.FC<PorpsType> = ({
   }
   console.log("...others", name,address,_goal,_pledgement,goalType)
 
+  // useRef 是为了处理:在提交表单后异步事件处理的期间，你的React组件状态丢失的问题。这可能是因为页面刷新或者组件重新渲染造成的。在React中，当组件重新渲染时，它的状态会被重置
+  // useRef常常被用来获取和保存不会因组件重新渲染而改变的变量。
   const postToBackendDatabase = async (flag_id: number) => {
     // if (_data) { // if (_data && onChain && typeof flagId !== "undefined") {
       console.log("postToBackendDatabase(), flag_id and others: ", flag_id, nameRef.current,address, goalRef.current , pledgementRef.current, goalTypeRef.current )
