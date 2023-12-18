@@ -21,29 +21,10 @@ import useDebounce from "./usehooks"
 import {email, password} from "./utils/credentials"
 
 import { Akord, Auth, NFTMetadata } from "@akord/akord-js";
-console.log("email, password", email, password);
 const { wallet, jwt } = await Auth.signIn(email, password);
 const akord = await Akord.init(wallet);
 const vaultId: string = "MVCubhFGdWwrlRq_p_yvYOHvCCcs0agMl0Cc1oFPMY8"
 const manifestNode = await akord.manifest.get(vaultId);
-
-const nftMetadata: NFTMetadata = {
-  name: "Golden Orchid - Flora Fantasy #1",
-  creator: "xxxx",
-  owner: "yyyy", // should be a valid Arweave address
-  collection: "Flora Fantasy",
-  description: "A rare digital representation of the mythical Golden Orchid",
-  type: "image",
-  topics: ["floral", "nature"]
-};
-
-// 假设您有一段要转换的文本
-const text = "这是一段文本";
-// 创建一个新的 Blob 对象，它是 File 接口的基础
-const blob = new Blob([text], { type: 'text/plain' });
-// 使用 Blob 对象创建一个 File 对象
-const file = new File([blob], "example.txt", { type: 'text/plain' });
-
 
 type Inputs = {
   isOnchain: string
@@ -61,7 +42,7 @@ type PorpsType = {
   setFlagId: Function
   fetchFlags: Function
 }
-console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
+
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 const ModalComponent: React.FC<PorpsType> = ({
@@ -100,7 +81,7 @@ const ModalComponent: React.FC<PorpsType> = ({
 
   const [nftId, setNftId] = useState<string | null>(null); // 存储 mint 后的 nftId
 
-  console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
+  // console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
 
   // useEffect(() => {
   //   setPledgement(watch("pledgement"))
@@ -191,13 +172,25 @@ const ModalComponent: React.FC<PorpsType> = ({
 
 
 
-  const handleMintNft = async () => {
-    if (!file) {
-      console.error('No file selected');
-      return;
-    }
 
+  const nftMetadata: NFTMetadata = {
+    name: goal?.toString() || "",
+    creator: name?.toString(),
+    owner: address?.toString() || "", // should be a valid Arweave address
+    collection: "flagDAO",
+    description: goal,
+    type: "document",
+    topics: [goalType || ""]
+  };
+  
+  // 创建一个新的 Blob 对象，它是 File 接口的基础
+  const blob = new Blob([goal || ""], { type: 'text/plain' });
+  const file = new File([blob], "flag.txt", { type: 'text/plain' }); // 使用 Blob 对象创建一个 File 对象
+
+  const handleMintNft = async () => {
+    if (!file) { console.error('No file selected'); return; }
     try {
+      console.log("nftMetadata", nftMetadata);
       const response = await akord.nft.mint(vaultId, file, nftMetadata);
       setNftId(response.nftId);
       console.log('NFT minted with ID:', response.nftId);

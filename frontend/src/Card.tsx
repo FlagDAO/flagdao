@@ -24,8 +24,6 @@ const Card: React.FC<CardProps> = (props) => {
   const [id, setId] = useState<Number>(props.flag_id)
   const _id = useDebounce(id, 100)
   const { address } = useAccount()
-   
-   console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
 
   // console.log("created_at", getTimeDifference(props.created_at));
 
