@@ -10,6 +10,7 @@ import {
   useAccount,
   useNetwork
 } from "wagmi"
+import { encodeBase64, toUtf8Bytes } from "ethers";
 import {
   FLAGDAO_CONTRACT_ADDR,
   contractABI,
@@ -80,11 +81,11 @@ export const UploadToArweave = forwardRef<CanShowAlert, Props>(({name, goal, onA
             console.log("goal, name from father component: ", goal, name);
 
             const nftMetadata: NFTMetadata = {
-              name: "Base64: " + goal?.toString() ,
-              creator: name?.toString() || "",
-              owner: name?.toString() || "",
+              name: "Base64: " + encodeBase64(toUtf8Bytes(goal))?.toString() ,
+              creator: "Base64: " + encodeBase64(toUtf8Bytes(name))?.toString() || "",
+              owner: "Base64: " + encodeBase64(toUtf8Bytes(name))?.toString() || "",
               collection: "flagDAO",
-              description: goal?.toString() || "",
+              description: "Base64: " + encodeBase64(toUtf8Bytes(goal))?.toString(),
               type: "document",
               topics: [""]
             };
@@ -92,11 +93,12 @@ export const UploadToArweave = forwardRef<CanShowAlert, Props>(({name, goal, onA
             // 创建一个新的 Blob 对象，它是 File 接口的基础
             const blob = new Blob([goal || ""], { type: 'text/plain' });
             const file = new File([blob], "flag.txt", { type: 'text/plain' }); // 使用 Blob 对象创建一个 File 对象
-      
+
+            onSetMintRes("Minting");  // 给父组件传值. 这个要在 mint 之前设置，否则会有延迟.
             const response = await akord?.nft.mint(vaultId, file, nftMetadata);
-            console.log("response.object\n", response.object)
-            console.log("response.transactionId\n", response.transactionId)
-            onSetMintRes("Minting");  // 给父组件传值.
+            // console.log("response.object\n", response.object)
+            // console.log("response.transactionId\n", response.transactionId)
+
             if(response.nftId){
               setNftId(response.nftId);
               onArweaveIdSet(response.nftId);  // 向父组件传递 nftId 的值.

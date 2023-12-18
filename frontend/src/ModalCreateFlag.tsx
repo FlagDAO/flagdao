@@ -52,9 +52,12 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
 
   // 子组件调用时, 会 call 这个传递 arId, onArweaveIdSet 函数传递 arId
   const handleArIdChange = (arId: string) => { // 
+    console.log("handleArIdChange arId: ", arId);
     setArId(arId);
+    setMintStatus("");
   };
   const handleArNFTMint = (status: string) => { // Minting. if(mintStatus == "Minting") { .. }
+    console.log("handleArNFTMint status: ", status);
     setMintStatus(status);
   }
   const { address } = useAccount()
@@ -64,8 +67,8 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
 
   const [goal, setGoal] = useState<string>()
   const [pledgement, setPledgement] = useState<number>()
-  const _goal = useDebounce(goal, 500)
-  const _pledgement = useDebounce(pledgement, 500)
+  const _goal = useDebounce(goal, 200)
+  const _pledgement = useDebounce(pledgement, 200)
 
   const [name, setName] = useState<string>()
 
@@ -260,11 +263,18 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
                   onArweaveIdSet={handleArIdChange} 
                   onSetMintRes  ={handleArNFTMint}/>            
               {
-                !arId &&
+                (!arId && (mintStatus != "Minting")) && 
                   <button className="mt-4 w-full rounded-md bg-black    py-2 text-white border font-semibold text-md"
                     // 调用子组件的方法
                     onClick={(e) => { arweaveRef.current?.handleUploadToArweave(e) }}>
                     send to Arweave.
+                  </button>
+              }
+              {
+                (mintStatus == "Minting") && 
+                    <button className="mt-4 w-full rounded-md bg-black    py-2 text-white border font-semibold text-md"
+                    >
+                    sending...
                   </button>
               }
 
