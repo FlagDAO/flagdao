@@ -35,8 +35,8 @@ const Card: React.FC<CardProps> = (props) => {
     address: FLAGDAO_CONTRACT_ADDR,
     abi: contractABI,
     // chainId: REACT_APP_CHAIN_ID,
-    functionName: "pledge",
-    args: [_id, _amt],
+    functionName: "gamblePledge",
+    args: [_id,],
     enabled: Boolean(_id),
   })
 

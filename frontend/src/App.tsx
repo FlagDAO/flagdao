@@ -6,7 +6,7 @@ import { supabaseKey, supabaseUrl } from "./utils/credentials"
 import { createClient } from "@supabase/supabase-js"
 
 import Modal from "react-modal"
-import ModalComponent from "./Modal"
+import {ModalCreateFlag} from "./ModalCreateFlag"
 // import { ethers, BigNumber } from "ethers"
 
 import { useState, useEffect, lazy } from "react"
@@ -64,7 +64,7 @@ const App = () => {
   const [flagId, setFlagId] = useState(0)
 
   const supabase = createClient(supabaseUrl, supabaseKey)
-  console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
+  // console.log("supabaseKey, supabaseUrl", supabaseKey, supabaseUrl);
 
   const fetchFlags = async () => {
     const { data: res, error } = await supabase.from("flag").select("*")
@@ -123,7 +123,7 @@ const App = () => {
         </div>
         {/* <h1 className="text-3xl font-bold text-center mt-4">FlagDAO</h1> */}
 
-        <ModalComponent
+        <ModalCreateFlag
           flagId={flagId}
           setFlagId={setFlagId}
           fetchFlags={fetchFlags}
