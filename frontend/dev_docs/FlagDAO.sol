@@ -16,29 +16,23 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // - https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 
 contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableUpgradeable {
-    event CreateFlag(uint256 indexed flagId, address indexed sender, uint256 indexed amt, string arTxId);
-    event GamblePledge(uint256 indexed flagId, address indexed sender, uint256 indexed amt, address flager);
-    // event RemoveFlag(uint256 indexed flagId, address indexed sender);
-    event FlagStatusSet(address indexed flager, uint256 indexed flagId, uint8 indexed status);
-    event FlagRetrive(uint256 indexed flagId, address indexed flager, uint256 indexed amt);
-    
-    
+    event Create(uint256 indexed flagId, address indexed sender, string arTxId);
+    event Remove(uint256 indexed flagId, address indexed sender);
+    event Trade(TradeType indexed tradeType, uint256 indexed flagId, address indexed sender, uint256 tokenAmount);
+    event FlagStatusUpdate(address indexed flager, uint256 indexed flagId, uint8 indexed status);
+
     // FLAG
     struct Flag {
         uint256 id;    // 
         string arTxId; // arweave transaction id
         address flager;
-        FlagStatus status; // Add the FlagStatus field
-        // address[] addr ;
-        // uint256[] 
     }
 
     // 每个作品的唯一 ID
     uint256 public flagId; //flagId; [0,1,2..]
     mapping(uint256 => Flag) public flags;
-
-    // 对某个 flag 的质押者(赌徒)
     mapping(uint256 => address[]) public flagBettors;
+    mapping(uint256 => uint8) public flagStatus;
 
     // 一个用户多个 Flag
     // mapping(address => uint256[]) public userFlags;
@@ -95,67 +89,63 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
     //     return userFlags[addr];
     // }
 
-    function testEventEmit(string calldata arTxId) public {
-        emit CreateFlag(2333, msg.sender, 1054, arTxId);
-    }
-
-    function createFlag(string calldata arTxId) public payable {
+    function create(string calldata arTxId) public payable {
         bytes32 txHash = keccak256(abi.encodePacked(arTxId));
-        // 暂时移除 12.20
-        // require(txTo[txHash] == 0, "Asset already exists");
-        uint _amt = msg.value;
+        require(txTo[txHash] == 0, "Asset already exists");
 
-        flags[flagId] = Flag(flagId, arTxId, msg.sender, FlagStatus.Undone); // from 0.
-        // flagStatus[flagId] =  // mark Undone
+        flags[flagId] = Flag(flagId, arTxId, msg.sender); // from 0.
+        flagStatus[flagId] = uint8(FlagStatus.Undone); // mark Undone
         // userFlags[msg.sender].push(flagId);
         txTo[txHash] = flagId;
 
         // 记录质押份额
-        pool[flagId] += _amt;
-        selfpool[flagId] += _amt;
+        pool[flagId] += msg.value;
+        selfpool[flagId] += msg.value;
 
         flagId = flagId + 1;
 
         // mint `msg.value`  份 1 wei = 1 份
-        _mint(msg.sender, flagId-1, _amt, "");
-        emit CreateFlag(flagId-1, msg.sender, _amt, arTxId);
+        _mint(msg.sender, flagId-1, msg.value);
+        emit Create(flagId - 1, msg.sender, arTxId);
+        emit Trade(TradeType.Create, flagId -1, msg.sender, msg.value);
     }
 
     // fucntion selfPledge() public payable {}
 
     function gamblePledge(uint256 id) public payable {
         require(id < flagId, "Flag does not exist.");
-        Flag storage flag = flags[id];
+        Flag memory flag = flags[id];
         require(flag.flager != msg.sender, "Flag owner can not gamble lol.");
-        uint256 _amt = msg.value;
+        
         flagBettors[id].push(msg.sender);
         // 记录质押份额
-        pool[id] += _amt;
-        betspool[id] += _amt;
+        pool[id] += msg.value;
+        betspool[id] += msg.value;
 
-        _mint(msg.sender, id, _amt, "");
-        emit GamblePledge(flagId, msg.sender, _amt, flag.flager);
+        _mint(msg.sender, id, msg.value, "");
+        emit Trade(TradeType.Gamble, flagId, msg.sender, msg.value);
     }
     
+
+
     // Only contract deployer can change .
     function setFlagDone(uint256 id) public onlyOwner {
         require(id < flagId, "Flag does not exist.");
-        Flag storage flag = flags[id];
-        // require(flag.status == FlagStatus.Undone, "Flag has already been changed!.");
+        Flag memory flag = flags[id];
+        require(flagStatus[id] == 0, "Flag has already been changed!.");
 
-        flag.status = FlagStatus.Done;  // set `1`
-        
+        flagStatus[id] = uint8(FlagStatus.Done);  // set `1`
+
+        emit FlagStatusUpdate(flag.flager, flag.id, flagStatus[id]);
         _resetShares(id);
-        emit FlagStatusSet(flag.flager, flag.id, uint8(flag.status));
     }
 
     function _resetShares(uint256 id) internal {
         require(id < flagId, "Flag does not exist.");
-        Flag memory flag = flags[id];
-
-        require(flag.status == FlagStatus.Done, "Flag is not done yet.");
+        require(flagStatus[id] == uint8(FlagStatus.Done), "Flag is not done yet.");
 
         // rest share, mint NFT.
+        Flag memory flag = flags[id];
         _mint(flag.flager, id, betspool[id], "bonus");
         selfpool[id] = selfpool[id] + betspool[id];
 
@@ -173,8 +163,8 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
 
     function flagerRetrive(uint256 id) public {
         require(id < flagId, "Flag does not exist.");
+        require(flagStatus[id] == uint8(FlagStatus.Done), "Flag is not done yet.");
         Flag memory flag = flags[id];
-        require(flag.status == FlagStatus.Done, "Flag is not done yet.");
         require(flag.flager == msg.sender, "Only flag owner can refund.");
         require(selfpool[id] > 0, "Already claimed or No selfpool to refund.");
 
@@ -182,33 +172,30 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         selfpool[id] = 0;
         pool[id] = 0;
         betspool[id] = 0;
-
         // DO NOT BURN NFT as a bonus.
-
         (bool sent, ) = payable(msg.sender).call{value: refund}("");
         require(sent, "Failed to retrive Ether");
-        emit FlagRetrive(flagId, msg.sender, refund);
     }
 
     // -----------------------------------------------------------------------
 
     function setFlagRug(uint256 id) public onlyOwner {
         require(id < flagId, "Flag does not exist.");
-        Flag storage flag = flags[id];
-        // require(flag.status == FlagStatus.Undone , "Flag has already been changed!.");
+        Flag memory flag = flags[id];
+        require(flagStatus[id] == 0, "Flag has already been changed!.");
 
-        flag.status = FlagStatus.Rug; // set `2`
+        flagStatus[id] = uint8(FlagStatus.Rug); // set `2`
+        emit FlagStatusUpdate(flag.flager, flag.id, uint8(FlagStatus.Rug));
 
         _resetSharesForRug(id);
-        emit FlagStatusSet(flag.flager, flag.id, uint8(flag.status));
     }
 
     function _resetSharesForRug(uint256 id) internal {
         require(id < flagId, "Flag does not exist.");
-        Flag memory flag = flags[id];
-        require(flag.status == FlagStatus.Rug, "Flag is not Rug yet lol.");
+        require(flagStatus[id] == uint8(FlagStatus.Rug), "Flag is not Rug yet lol.");
 
         // rest share, burn NFT.
+        Flag memory flag = flags[id];
         _burn(flag.flager, id, selfpool[id]);
 
         // reset share, burn NFT.
@@ -234,16 +221,15 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         require(id < flagId, "Flag does not exist.");
         Flag memory flag = flags[id];
         require(flag.flager != msg.sender, "Flag owner can not refund.");
-        require(flag.status == FlagStatus.Rug, "Flag is not rug yet.");
+        require(flagStatus[id] == uint8(FlagStatus.Rug), "Flag is not rug yet.");
         require(gamblepool[id][msg.sender] > 0, "No privilege to refund.");
 
-        uint256 _amt = gamblepool[id][msg.sender];
+        uint256 amount = gamblepool[id][msg.sender];
 
         gamblepool[id][msg.sender] = 0;
 
-        (bool sent, ) = payable(msg.sender).call{value: _amt}("");
+        (bool sent, ) = payable(msg.sender).call{value: amount}("");
         require(sent, "Failed to send Ether");
-        emit FlagRetrive(flagId, msg.sender, _amt);
     }
 
     function uri(uint256 id) public view override returns (string memory) {

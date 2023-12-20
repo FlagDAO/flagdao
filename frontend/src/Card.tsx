@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { supabaseKey, supabaseUrl } from "./utils/credentials"
 import Avatar, { genConfig } from "react-nice-avatar"
 import { getTimeDifference } from "./utils/utils"
+import {parseEther, ethers} from "ethers";
 
 import { useState, useEffect, lazy } from "react"
 import { CardProps } from "./App"
@@ -13,15 +14,19 @@ import {
   contractABI,
 } from "./utils/constants"
 const BettorsModal = lazy(() => import("./components/BettorsModal"))
-import { BsCurrencyBitcoin } from "react-icons/bs"
+import { calculate_pledgement } from "./ModalCreateFlag"
+// import { BsCurrencyBitcoin } from "react-icons/bs"
+// import { useContractEvents, useContract } from "@thirdweb-dev/react";
 
 // const config = genConfig()
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+
+
 const Card: React.FC<CardProps> = (props) => {
-  const [amt, setAmt] = useState<number>(0)
-  const _amt = useDebounce(amt, 100)
-  const [id, setId] = useState<Number>(props.flag_id)
+  const [amt, setAmt] = useState<number>(0.01)
+  const _amt = useDebounce(amt, 10)
+  const [id, setId] = useState<Number>(props.flagId)
   const _id = useDebounce(id, 100)
   const { address } = useAccount()
 
@@ -37,51 +42,88 @@ const Card: React.FC<CardProps> = (props) => {
     // chainId: REACT_APP_CHAIN_ID,
     functionName: "gamblePledge",
     args: [_id,],
+    value: parseEther(calculate_pledgement(_amt)), // ethers.utils.parseEther("0.1"),
     enabled: Boolean(_id),
   })
 
   const {
     data,
     isLoading,
-    write: write_pledge,
+    isSuccess,
+    isError,
+    write: write_gamblePledge,
     error,
   } = useContractWrite(config)
   if (error) console.log("Pledge error", error)
 
 
-  const updateBackend = async (_id: any) => {
-    if (address == props.address) {
-      // Pledge itself
-      const { data: dat, error } = await supabase
-        .from("flag")
-        .update({ amt: Number(_amt) + Number(props.self_plg) })
-        .eq("flagID", _id)
-    } else {
-      // Pledge others
-      const { data: dat, error } = await supabase
-        .from("flag")
-        .update({ bettors_amt: Number(_amt) + Number(props.bettors_plg) })
-        .eq("flagID", _id)
+
+  // there exists id=3, I want to update the JSON Array field, that add `{"bettor": "mike", "amt": 0.001}` into the JSON Array
+  // fetch the bettors list:
+  const testFetchJSONOfBettors = async () =>  {
+    const { data: fetchBettorsData, error: fetchBettorsError } = await supabase
+      .from('flag')
+      .select(`
+        flagId, name,
+        bettors->name,
+        bettors->value
+      `).eq("flagId", _id)
+      .limit(1);
+      console.log("fetchBettorsData -  returns:\n", _id, fetchBettorsData)
+
+      if(fetchBettorsData){
+      return {
+        name: fetchBettorsData[0]?.name,
+        value: fetchBettorsData[0]?.value,
+      };
     }
   }
+
+  const InsertBettorsToSupabase = async () => {
+
+      const {name: namelist, value: valuelist} = await testFetchJSONOfBettors();
+      
+      console.log("namelist, valuelist", namelist, valuelist);
+
+      const { data: datatest, error } = await supabase
+        .from('flag')
+        .update({
+          bettors: {
+            name: [...namelist, ...[address]],
+            value: [...valuelist, ...[_amt]]
+          }
+        })
+        // .eq('address->postcode', 90210)  // selector
+        .eq("flagId", _id)
+        .select();
+        // console.log("testInsertJson function returns:\n", datatest)
+      ;
+    }
+
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     try {
-      await write_pledge?.()
-      // 
+      await write_gamblePledge?.()
     } catch (error) {
-      console.error('Chain transaction failed:', error)
+      console.error('Gamble-Pledge transaction failed:', error)
     }
   }
 
+
   // listen the blockchain chage.   // useEffect(() => {  },[])
-  useContractEvent({
+  // 有 2 个 TS compiler Warning(不用管):
+  // 1. Property 'args' does not exist on type 'Log'.ts(2339)
+  // 2. Cannot invoke an object which is possibly 'undefined'.ts(2722) 
+  const unwatch = useContractEvent({
     address: FLAGDAO_CONTRACT_ADDR,
     abi: contractABI,
-    eventName: 'Launch',
-    listener(log) {
-      updateBackend(_id)   // 更新后端 console.log(log)
+    eventName: 'GamblePledge',
+    listener: (logs) => {
+      // logs[0] 里面放的是 _mint 函数 emit 的事件.
+      const { args } = logs[1]
+      console.log("`GamblePledge` Listen ..", args, )
+      InsertBettorsToSupabase()   // 更新后端 supabase
     },
   })
 
@@ -103,9 +145,31 @@ const Card: React.FC<CardProps> = (props) => {
           {/* Avatar */}
           <div className="flex-col items-center p-4">
             <div>
+
+
+
+
+            {/*             
+              <button 
+                 className="bg bg-amber-600 m-2 p-2 w-full h-full"
+                 onClick={(e) => testFetchJSONOfBettors()}> testFetchJSONOfBettors 
+              </button>
+
+
+              <button 
+                 className="bg bg-amber-600 m-2 p-2 w-full h-full"
+                 onClick={(e) => testInsertJson()}> testInsertJson 
+              </button> */}
+
+
+
+
+
+
+
               <Avatar
                 style={{ width: "5rem", height: "5rem" }}
-                {...genConfig(props?.name)}
+                {...genConfig(props?.name || "default")}
               />{" "}
             </div>
             <div className="text-center text-slate-800 font-medium">
@@ -124,7 +188,7 @@ const Card: React.FC<CardProps> = (props) => {
               <span className="text-sm pt-1 pr-1">Self Pledged: </span>{" "}
               <span className="text-lg font-bold text-indigo-700">
                 {" "}
-                ${props?.self_plg?.toString()}
+                ${props?.pledgement?.toString()}
               </span>
               {/* <span className="text-sm pt-1 pr-1 ml-4">Bettors: </span> <span className="text-lg font-bold text-lime-700">${props?.bettors_plg?.toString()}</span> */}
               {/* 
@@ -147,21 +211,21 @@ const Card: React.FC<CardProps> = (props) => {
 
             <div className="Labels & # Status">
               <button className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-                #{props?.goal_type}
+                #Flag
               </button>
               <button
                 className={`inline-block rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2 
                 ${
-                  props?.flag_status === "ongoing"
+                  props?.flagStatus === "Ongoing"
                     ? "bg-yellow-500"
-                    : props?.flag_status === "success"
+                    : props?.flagStatus === "Success"
                     ? "bg-green-600"
-                    : props?.flag_status === "rug"
+                    : props?.flagStatus === "Rug"
                     ? "bg-red-500"
                     : ""
                 }`}
               >
-                {props?.flag_status}
+                {props?.flagStatus}
               </button>
             </div>
           </div>
@@ -170,7 +234,7 @@ const Card: React.FC<CardProps> = (props) => {
         {/* Button & input of Pledge */}
         <div>
           {" "}
-          {props.flag_status == "ongoing" && (
+          {props?.flagStatus == "Ongoing" && (
             <form onSubmit={(e) => handleSubmit(e)}>
               {isLoading ? (
                 <span className="font-sans font-semibold text-slate-800 text-base  text-center  rounded-lg ">
@@ -184,15 +248,20 @@ const Card: React.FC<CardProps> = (props) => {
                   >
                     Your Email
                   </label> */}
-                  <div className="relative mb-2">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-1 pointer-events-none">
-                      <BsCurrencyBitcoin className="w-5 h-5 text-gray-500" />
+                  <div className="relative mb-2 w-32">
+                    <div className="absolute inset-y-0 left-1 flex items-center pl-1 pointer-events-none">
+                      {/* <BsCurrencyBitcoin className="w-5 h-5 text-gray-500" />*/}
+                      {/* <FontAwesomeIcon icon="fa-brands fa-ethereum" />*/}
+                      <svg xmlns="http://www.w3.org/2000/svg" height="16" width="10" viewBox="0 0 320 512"><path d="M311.9 260.8L160 353.6 8 260.8 160 0l151.9 260.8zM160 383.4L8 290.6 160 512l152-221.4-152 92.8z"/></svg>
                     </div>
                     <input
-                      className="w-20 pl-6 bg-gray-50 border border-gray-300 text-gray-500 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-1.5"
+                      className="w-full pl-6 bg-gray-50 border border-gray-300 text-gray-500 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-1.5"
                       onChange={(e: any) => setAmt(e.target.value)}
-                      placeholder="$0"
+                      placeholder="bet for it!"
                       value={_amt}
+                      min={0.00001}
+                      max={9.2}
+                      step={0.00001}  
                       type="number"
                       id="input-group-1"
                     />
@@ -207,8 +276,8 @@ const Card: React.FC<CardProps> = (props) => {
               )}
             </form>
           )}
-          <form>
-            {props.flag_status == "success" && (
+          {/* <form>
+            {props?.flagStatus == "success" && (
               <button
                 type="submit"
                 className="border-x-0.5 font-sans font-semibold text-slate-100 text-base px-2 py-1 text-center mr-2 mb-2 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 rounded-lg "
@@ -216,7 +285,7 @@ const Card: React.FC<CardProps> = (props) => {
                 Collect Winnings
               </button>
             )}
-            {props.flag_status == "rug" && (
+            {props?.flagStatus == "rug" && (
               <button
                 type="submit"
                 className="border-x-0.5 font-sans font-semibold text-slate-100 text-base px-2 py-1 text-center mr-2 mb-2 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 rounded-lg "
@@ -224,43 +293,10 @@ const Card: React.FC<CardProps> = (props) => {
                 Claim the Bet!
               </button>
             )}
-          </form>
+          </form> */}
         </div>
       </div>
     </div>
   )
 }
-
-export default Card
-
-// <div className="max-w-sm rounded overflow-hidden shadow-lg">
-// <Avatar style={{ width: '4rem', height: '4rem' }} {...genConfig(props.name) } />
-// <span>{props.name}</span>
-// <div className="px-6 py-4">
-//   <div className="font-bold text-xl mb-2">The Coldest Sunset</div>
-//   <p className="text-gray-700 text-base">
-//     Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptatibus quia, nulla! Maiores et perferendis eaque, exercitationem praesentium nihil.
-//   </p>
-// </div>
-
-// </div>
-
-// <div className="mt-6">
-// <div className="rounded-lg overflow-hidden shadow-lg p-4 bg-white flex flex-row">
-//   <div className="basis-3/4 flex flex-col h-auto">
-//     <div className="flex pl-4 pr-6 w-auto text-xl font-semibold tracking-tight">
-//       <p>{props.goal}</p>
-//     </div>
-//     <div className="flex flex-col">
-//        <div className="pt-2 py-1 px-4 font-sans tracking-tight">addr: {props.address}</div>
-//        <div className="py-1 px-4 font-sans tracking-tight">slef-pledged:
-//           <div className="inline text-xl font-semibold py-1 px-1 text-gray-700">${props.self_plg.toString()}</div>
-//        </div>
-//     </div>
-//   </div>
-
-//   <div className="w-1/4 grid grid-cols-1 gap-4">
-
-//   </div>
-// </div>
-// </div>
+export default Card;

@@ -41,7 +41,6 @@ export const UploadToArweave = forwardRef<CanShowAlert, Props>(({name, goal, onA
   const [akord, setAkord] = useState<Akord>();
   const [nftId, setNftId] = useState<string | null>(null); // 存储 mint 后的 nftId
 
-
   useEffect(() => {
     async function signInAndInit() {
         try {
@@ -91,7 +90,7 @@ export const UploadToArweave = forwardRef<CanShowAlert, Props>(({name, goal, onA
             };
       
             // 创建一个新的 Blob 对象，它是 File 接口的基础
-            const blob = new Blob([goal || ""], { type: 'text/plain' });
+            const blob = new Blob([goal || "", ], { type: 'text/plain' });
             const file = new File([blob], "flag.txt", { type: 'text/plain' }); // 使用 Blob 对象创建一个 File 对象
 
             onSetMintRes("Minting");  // 给父组件传值. 这个要在 mint 之前设置，否则会有延迟.
@@ -105,6 +104,7 @@ export const UploadToArweave = forwardRef<CanShowAlert, Props>(({name, goal, onA
               console.log('NFT minted with ID:', response?.nftId);
             }
           } catch (error) {
+            onSetMintRes("Error");
             console.error('Error minting NFT:\n', error);
           }
         } // handleUploadToArweave

@@ -10,7 +10,8 @@ import {ModalCreateFlag} from "./ModalCreateFlag"
 // import { ethers, BigNumber } from "ethers"
 
 import { useState, useEffect, lazy } from "react"
-const Card = lazy(() => import("./Card"))
+// const Card = lazy(() => import("./Card"));
+import Card from "./Card";
 
 import {
   useAccount,
@@ -39,14 +40,12 @@ type FormData = {
 
 export interface CardProps {
   goal: string
-  goal_type: string
   address: string
   name: string
-  flag_id: number
-  self_plg: number
-  bettors_plg: number
-  flag_status: string
-  on_chain: boolean
+  flagId: number
+  pledgement: number
+  flagStatus: string
+  onChain: boolean
   created_at: string
   startAt: string
   endAt: string
@@ -135,14 +134,12 @@ const App = () => {
           <Card
             key={index}
             goal={item.goal}
-            goal_type={item.goalType}
             address={item.address}
             name={item.name}
-            flag_id={item.flagID}
-            self_plg={item.amt}
-            bettors_plg={item.bettors_amt}
-            flag_status={item.flagStatus}
-            on_chain={item.onChain}
+            flagId={item.flagId}
+            pledgement={item.pledgement}
+            flagStatus={item.flagStatus}
+            onChain={item.onChain}
             created_at={item.created_at}
             startAt={item.startAt}
             endAt={item.endAt}

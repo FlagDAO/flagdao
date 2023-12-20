@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useRef } from "react"
-import {parseEther} from "ethers";
+import "ethers";
+import {parseEther, ethers} from "ethers";
 import Modal from "react-modal"
 import { UploadToArweave, CanShowAlert } from "./components/UploadToArweave"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { supabaseKey, supabaseUrl } from "./utils/credentials"
 import { createClient } from "@supabase/supabase-js"
+import DatePicker from "react-datepicker";
+import { ContractFunctionExecutionError } from "viem";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   useContractWrite,
   usePrepareContractWrite,
   useContractEvent,
   useAccount,
-  useNetwork
+  useNetwork,
+  useChainId
 } from "wagmi"
 import {
   FLAGDAO_CONTRACT_ADDR,
@@ -18,15 +23,11 @@ import {
 } from "./utils/constants"
 import useDebounce from "./usehooks"
 
-// Modal.setAppElement('#root');  // 这行代码应该在你的App根元素上
-
 type Inputs = {
-  isOnchain: string
   name: string
   address: string
   goal: string
-  pledgement: number
-  goal_type: string
+  _pledgement: number
   start_date: string
   end_date: string
 }
@@ -39,11 +40,20 @@ type PorpsType = {
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+export const calculate_pledgement = (_pledgement: number | string): string => {
+  if (_pledgement === undefined) {
+    return "0.01";
+  }
+  const pledgementValue = _pledgement === "" ? "0.01" : _pledgement.toString();
+  return pledgementValue;
+}
+
 export const ModalCreateFlag: React.FC<PorpsType> = ({
   flagId, // 从 App 父组件传来的 flagId, 表示.
   setFlagId,
   fetchFlags,
 }) => {
+  // 调用子组件的方法
   const arweaveRef = useRef<CanShowAlert>(null);
 
   // 接受从子组件 <UploadToArweave /> 传来的 arId. 设置到父组件中.
@@ -60,15 +70,21 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
     console.log("handleArNFTMint status: ", status);
     setMintStatus(status);
   }
+
+
+  const [startAt, setStartAt] = useState(null);
+  const [endAt, setEndAt] = useState(null);
+
   const { address } = useAccount()
-  const { chain } = useNetwork()
+  const { chain  } = useNetwork()
   
   const [modalIsOpen, setIsOpen] = useState(false)
 
-  const [goal, setGoal] = useState<string>()
-  const [pledgement, setPledgement] = useState<number>()
-  const _goal = useDebounce(goal, 200)
-  const _pledgement = useDebounce(pledgement, 200)
+  const [goal, setGoal] = useState<string>("")
+  // const [pledgement, setPledgement] = useState<string>("0.01");
+  const [_pledgement, set_Pledgement] = useState<number>(0.01)
+  const _goal = useDebounce(goal, 20)
+  // const _pledgement = useDebounce(pledgement, 200)
 
   const [name, setName] = useState<string>()
 
@@ -87,97 +103,113 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
   useEffect(() => {
     setName(watch("name"));
     setGoal(watch("goal"));
-    setPledgement(watch("pledgement"));
-  }, [watch("name"), watch("goal"), watch("pledgement")]);
+    set_Pledgement(watch("_pledgement"));
+  }, [watch("name"), watch("goal"), watch("_pledgement")]);
 
+
+
+
+
+  const postToSupabase = async (flagId: number) => {
+    // if (_data) { // if (_data && onChain && typeof flagId !== "undefined") {
+    console.log("To supabase, flag_id and others: ", nameRef.current,address, goalRef.current , pledgementRef.current )
+    try{      
+      // fetch flagID
+      const { data } = await supabase
+      .from('flag')
+      .select('flagId')
+      .order('flagId', { ascending: false })
+      .limit(1)
+      ;
+      const newestflagId = data![0].flagId;
+      console.log("newest flagID", newestflagId);
+      
+      if(data && data[0].flagId) {
+        if(flagId == newestflagId) { 
+          return  // flagId 在后端已经存在.
+        }else{
+          const {data: res } = await supabase.from("flag").insert([
+            {
+              flagId: Number(data[0]?.flagId + 1), // whereas `TypeError: Do not know how to serialize a BigInt`
+              name: name,
+              address: address,
+              goal: _goal,
+              pledgement: _pledgement,
+              startAt: startAt === "" ? null : startAt,
+              endAt: endAt === "" ? null : endAt,
+              chain: chain?.name,
+              chainId: chain?.id,
+              onChain : true,
+              arId,
+            },
+          ]).select()
+          console.log("the DATA post To Backend Database: \n", res)
+      }
+    }
+    } catch(error) {
+      console.log("postToBackendDatabase error", error)
+    }
+  }
+
+  // // 只有这个能监听到函数,别改了..
+  // // 这个函数不会调起 GamblePledge 事件.
+  // // Listen Event, when on-chain contract successes, execute it to post backend database.
+  useContractEvent({
+    address: FLAGDAO_CONTRACT_ADDR,
+    abi: contractABI,
+    // eventName: "testEventEmit",  完整参数
+    eventName: "CreateFlag", // (我发现这个地方填函数名也可以..) 完整参数 amt arTxId flagId sender
+    listener: (logs) => {
+      // ERC1155 Transfer 的 Emit 参数:
+      // const { args } = logs[0]
+      // console.log("`testEventEmit CreateFlag`.....", args)
+     
+
+      // amt : 2000000000000n
+      // arTxId : "aa228340-f44a-4f65-9ee7-6aebfa8668f5"
+      // flagId : 14n
+      // sender : "0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F"
+      const { args: arg } = logs[1]
+      console.log("`CreateFlag CreateFlag args2`.....", arg)
+      setFlagId(arg.flagId);
+      postToSupabase(arg.flagId);
+    },
+  })
 
   // create function to put flag onChian.
   const { config } = usePrepareContractWrite({
     address: FLAGDAO_CONTRACT_ADDR,
     abi: contractABI,
     chainId: chain?.id,
-    functionName: "create",
+    functionName: "createFlag",
     args: [arId], // no need to ** 18
-    value: parseEther("0.1"), // ethers.utils.parseEther("0.1"),
+    value: parseEther(calculate_pledgement(_pledgement)), // ethers.utils.parseEther("0.1"),
   })
 
-  const { data: res, isLoading, write, error } = useContractWrite(config)
+  const { data: res, write, error, isLoading, isSuccess, isError } = useContractWrite(config)
 
   const onSubmit: SubmitHandler<Inputs> = async (data, e) => {
     e?.preventDefault();
     try {
       await write?.();   //  "create(arId)"
+      // await postToSupabase();
     }
     catch (error) { 
       console.error("onSubmit async An error occurred:", error); 
     }
   }
 
-  // useRef 是为了处理:在提交表单后异步事件处理的期间，你的 React 组件状态丢失的问题。这可能是因为页面刷新或者组件重新渲染造成的。在React中，当组件重新渲染时，它的状态会被重置
-  // useRef常常被用来获取和保存不会因组件重新渲染而改变的变量。
-  const postToBackendDatabase = async (flag_id: number) => {
-    // if (_data) { // if (_data && onChain && typeof flagId !== "undefined") {
-      console.log("postToBackendDatabase(), flag_id and others: ", flag_id, nameRef.current,address, goalRef.current , pledgementRef.current )
-      const { error, data: res } = await supabase.from("flag").insert([
-        {
-          flagID: Number(flag_id), // whereas `TypeError: Do not know how to serialize a BigInt`
-          name: name,
-          address: address,
-          goal: _goal,
-          amt: _pledgement,
-          // startAt: _data.start_date === "" ? null : _data.start_date,
-          // endAt: _data.end_date === "" ? null : _data.end_date,
-        },
-      ]).select()
-      console.log("postToBackendDatabase res", res)
-      console.log("postToBackendDatabase error", error)
-  }
-
-  // Listen Event, when on-chain contract successes, execute it to post backend database.
-  useContractEvent({
-    address: FLAGDAO_CONTRACT_ADDR,
-    abi: contractABI,
-    eventName: "Launch",
-    listener(log: any) {
-      console.log("log[0].args.id.....", log[0])
-      postToBackendDatabase(log[0].args.id) // pass in the flag_id.
-    },
-  })
-
   function openModal() { setIsOpen(true) }
   function closeModal() { setIsOpen(false) }
 
-
-  // const handleUploadToArweave = async () => {
-  //   if (!akord) { console.error('No akord!'); return; }
-    
-  //   try {
-  //     const nfts = await akord.nft.listAll(vaultId);
-  //     console.log("akord notes", nfts);
-
-  //     const nftMetadata: NFTMetadata = {
-  //       name: goal?.toString() || "",
-  //       creator: name?.toString(),
-  //       owner: name?.toString() || "",
-  //       collection: "flagDAO",
-  //       description: goal,
-  //       type: "document",
-  //       topics: [goalType || ""]
-  //     };
-
-  //     // 创建一个新的 Blob 对象，它是 File 接口的基础
-  //     const blob = new Blob([goal || ""], { type: 'text/plain' });
-  //     const file = new File([blob], "flag.txt", { type: 'text/plain' }); // 使用 Blob 对象创建一个 File 对象
-
-  //     const response = await akord?.nft.mint(vaultId, file, nftMetadata);
-  //     setNftId(response?.nftId || "");
-  //     console.log('NFT minted with ID:', response?.nftId);
-  //   } catch (error) {
-  //     console.error('Error minting NFT:', error);
-  //   }
-  // };
-
+  // console.log("infos:, goal, name, startAt, endAt flagId\n", address, goal, name, startAt, endAt,)
+  // console.log("Test upload on Chain \n", arId, _pledgement);
   
+  // 状态判断
+  // isLoading: 调起钱包的一瞬间, 由 false -> true.
+  // isSuccess: 直到合约执行完毕, 才由 false -> true. (昨天观测到现象,今天又不成立了...)
+  // console.log("isLoading, isSuccess, isError\n", isLoading, isSuccess, isError, flagId );
+
   return (
     <div className="flex justify-center items-center">
       <button
@@ -204,7 +236,7 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
           <h3 className="text-2xl mb-4 text-center font-black">
             create your FLAG!
           </h3>
-
+         
 
           {/* "handleSubmit" will validate your inputs before invoking "onSubmit" */}
           <form>
@@ -254,6 +286,32 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
               )}
             </>
             
+            <div className="grid grid-cols-2 justify-between gap-4">
+                <div id="left">
+                  <label className="text-gray-700 font-bold block mt-4">
+                    Flag's Start Date:
+                  </label>
+                  <DatePicker
+                    selected={startAt} // startDate是您的状态变量，用于保存选择的日期
+                    onChange={(date: any) => setStartAt(date)} // 设置startDate状态的函数
+                    className="border-solid border-gray-300 border py-1 mt-1 px-4 w-full rounded text-gray-700"
+                    placeholderText="📅 Select start date..."
+                    // autoFocus
+                  />
+                </div>
+
+                <div id="right">
+                  <label className="text-gray-700 font-bold block mt-4">
+                    End Date:
+                  </label>
+                  <DatePicker
+                    selected={endAt} // endDate是您的状态变量，用于保存选择的日期
+                    onChange={(date: any) => setEndAt(date)} // 设置endDate状态的函数
+                    className="border-solid border-gray-300 border py-1 mt-1 px-4 w-full rounded text-gray-700"
+                    placeholderText="📅 Select end date..."
+                  />
+                </div>
+            </div>
             {}
             <>
               <UploadToArweave
@@ -261,9 +319,9 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
                   name={name!} 
                   goal={goal!} 
                   onArweaveIdSet={handleArIdChange} 
-                  onSetMintRes  ={handleArNFTMint}/>            
+                  onSetMintRes  ={handleArNFTMint}/>  
               {
-                (!arId && (mintStatus != "Minting")) && 
+                ((!arId && (mintStatus != "Minting")) || (mintStatus == "Error")) && 
                   <button className="mt-4 w-full rounded-md bg-black    py-2 text-white border font-semibold text-md"
                     // 调用子组件的方法
                     onClick={(e) => { arweaveRef.current?.handleUploadToArweave(e) }}>
@@ -274,76 +332,82 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
                 (mintStatus == "Minting") && 
                     <button className="mt-4 w-full rounded-md bg-black    py-2 text-white border font-semibold text-md"
                     >
-                    sending...
+                    sending to Arweave...
                   </button>
               }
 
               {
                 arId && 
-                  <>
-                    <p>Success! Your <span className="fon font-bold">Arweave</span> NFT ID is: </p>
+                  <div className="pt-2">
+                    <p>✅ Success! Your <span className="font-bold">Arweave</span> Flag 🚩 NFT ID is: </p>
                     <p className="text-gray-500 text-sm ml-4">{arId}</p>
-                  </>
+                  </div>
               }
             </>
            </form>  {/* First form */}
-
-
-
 
 
           {/* Second form */}
 
           <form onSubmit={handleSubmit((e) => onSubmit(e))}>
 
+
           {arId && 
             <>
                 <label className="text-gray-700 font-bold block mt-4">
-                  * Pledge amount for the flag:
+                  Pledge amount for the flag:
                 </label>
-                <input
-                  className="border-solid border-gray-300 border py-1 mt-1 px-4 w-full rounded text-gray-700"
-                  defaultValue={0}
-                  type="number"
-                  min={0}
-                  placeholder="💰 your flag's pledge amount..."
-                  autoFocus
-                  {...register("pledgement", {
-                    required: "Please enter your pledge amount.",
-                  })}
-                />
-                {errors?.goal && (
+                <div className="jus justify-between grid grid-cols-2 ">
+                  <input
+                    className="border-solid inline  border-gray-300 py-1 mt-1 pl-4 border w-full rounded text-gray-700"
+                    defaultValue={0.01}
+                    type="number"
+                    min={0.000001}
+                    max={9.2}
+                    step={0.000001}
+                    placeholder="💰 your flag's pledge amount..."
+                    autoFocus
+                    {...register("_pledgement", {
+                      required: "Please enter your pledge amount.",
+                    })}
+                  />
+                  <div className="w-full py-1 mt-1 pl-2"> ETH.</div>
+                </div>
+                {errors?._pledgement && (
                   <div className="mb-3 text-normal text-red-500">
-                    {errors?.goal.message}
+                    {errors?._pledgement.message}
                   </div>
                 )}
-             
-                <button
-                  className="mt-4 w-full rounded-md bg-black text-center  py-2 text-white border font-semibold text-md"
-                  type="submit"
-                  name="Submit"
-                  disabled={isLoading}>
-                  Pledge onChain.
-                </button>
-                {
-                  isLoading && (
+ 
+                { (!isLoading && !isSuccess) &&
+                    <button
+                      className="mt-4 w-full rounded-md bg-black text-center  py-2 text-white border font-semibold text-md"
+                      type="submit"
+                      name="Submit"
+                      disabled={isLoading}>
+                      Pledge 💰 onChain
+                    </button>
+                }
+                { isLoading &&
                     <>
-                      <span className="mt-4 w-full rounded-md bg-black text-center  py-2 text-white border font-semibold text-md">
-                        Submitting...
-                      </span>
-                      <p className="text-sm text-slate-500">
-                        uploading to blockchain... Please wait...
-                      </p>
+                      <button className="mt-4 w-full rounded-md bg-black text-center  py-2 text-white border font-semibold text-md">
+                        Calling wallet, please wait...
+                      </button>
                     </>
-                  )
                 }
                 {
-                   Boolean(flagId) && (
-                      <p className="text-sm text-slate-500">
-                        Uploaded on the blockchain! the flag ID is {Number(flagId)},
-                        press ESC to quit.
-                      </p>
-                )}
+                  (isSuccess && flagId) && 
+                      <div className="text-sm text-slate-500"> 
+                        <p>Successfully uploaded to blockchain! </p>
+                        <p>{name}({address?.slice(0, 3)}...{address?.slice(-2)}) pledged {_pledgement} ETH for her/his flag 🚩(with flagId is {Number(flagId)})</p>
+                      </div>
+                }
+                {
+                  isError && 
+                    <p className="text-sm text-slate-500">
+                      User cancel or other errors.
+                    </p>
+                }
             </>
           }
 
