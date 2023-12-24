@@ -34,13 +34,13 @@ contract FlagDAOTest is Test {
 
         // create a flag to gamble on
         hoax(fred, 10 ether);
-        f.create{value: 1 wei}("arTxId - flag-0");
+        f.createFlag{value: 1 wei}("arTxId - flag-0");
     }
     
     function testCreate() public {
         // Fred calls create and sends 10 ETH
         hoax(fred, 10 ether);
-        f.create{value: 120 wei}("arTxId - flag-1");
+        f.createFlag{value: 120 wei}("arTxId - flag-1");
         assertEq(address(f).balance, 120 + 1); // 1 ether in setUp
 
         // hoax(fred, 10 ether);
@@ -63,7 +63,7 @@ contract FlagDAOTest is Test {
     function testFlagDone() public {
         // 1. fred create a flag.
         hoax(fred, 10 ether);
-        f.create{value: 120 wei}("flag-1 - I will achieve this goal!"); // flagId == 1
+        f.createFlag{value: 120 wei}("flag-1 - I will achieve this goal!"); // flagId == 1
         uint256 flagId = 1;
         assertEq(f.balanceOf(fred, flagId), 120);
 
@@ -97,7 +97,7 @@ contract FlagDAOTest is Test {
     function testFlagRug() public {
         // 1. fred create a flag.
         hoax(fred, 10 ether);
-        f.create{value: 120 wei}("flag-1 - I will achieve this goal!"); // flagId == 1
+        f.createFlag{value: 120 wei}("flag-1 - I will achieve this goal!"); // flagId == 1
         uint256 flagId = 1;
         assertEq(f.balanceOf(fred, flagId), 120);
 

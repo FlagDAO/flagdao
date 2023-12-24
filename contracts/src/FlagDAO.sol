@@ -22,35 +22,6 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
     event FlagStatusSet(address indexed flager, uint256 indexed flagId, uint8 indexed status);
     event FlagRetrive(uint256 indexed flagId, address indexed flager, uint256 indexed amt);
     
-    
-    // FLAG
-    struct Flag {
-        uint256 id;    // 
-        string arTxId; // arweave transaction id
-        address flager;
-        FlagStatus status; // Add the FlagStatus field
-        // address[] addr ;
-        // uint256[] 
-    }
-
-    // 每个作品的唯一 ID
-    uint256 public flagId; //flagId; [0,1,2..]
-    mapping(uint256 => Flag) public flags;
-
-    // 对某个 flag 的质押者(赌徒)
-    mapping(uint256 => address[]) public flagBettors;
-
-    // 一个用户多个 Flag
-    // mapping(address => uint256[]) public userFlags;
-    // Aweweave txId(去中心化存储里的) => 对应的 Flag id [0,1,2..]
-    mapping(bytes32 => uint256) public txTo;
-
-    mapping(uint256 => uint256) public pool; // 总质押金额
-    mapping(uint256 => uint256) public selfpool; // 自己质押的金额
-    mapping(uint256 => uint256) public betspool; // bettors 质押的金额
-    mapping(uint256 => mapping(address => uint256)) public gamblepool; // bettors 质押的金额
-    
-    uint256 public constant MAX_LEVERAGE = 5;          // 最大杠杆率
 
     enum FlagStatus {
         Undone,  
@@ -58,11 +29,38 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         Rug
     } // 0 = 未完成(初始状态), 1=Done, 2 = Rug
 
+    struct Flag {
+        uint256 id; 
+        string arTxId;        // arweave transaction id
+        address flager;
+        FlagStatus status;    // flag's status : `undone / Done / Rug`
+        // address[100] bettors; // up to 100 bettors
+    }
+
+    // 每个作品的唯一 ID
+    uint256 public flagId; //flagId; [0,1,2..]
+    mapping(uint256 => Flag) public flags;
+
+    // 一个用户多个 Flag
+    // mapping(address => uint256[]) public userFlags;
+    // AweweavetxId => Flag id [0,1,2..]
+    mapping(bytes32 => uint256) public txTo;
+
+    mapping(uint256 => uint256) public pool;     // Total pledged amt.
+    mapping(uint256 => uint256) public selfpool; // Total pledged amt by flager
+    mapping(uint256 => uint256) public betspool; // Total pledged amt by bettors
+    mapping(uint256 => mapping(address => uint256)) public gamblepool; // a single bettor's pledgemeny, used for distribution.
+    
+    uint256 public constant MAX_LEVERAGE = 5;    // Maximum leverage
+
     enum TradeType {
         Create,  // Create Flag 🚩
-        Gamble,  // Gamble 对赌
+        Gamble,  // Gamble i.e. Bet
         Retrieve
     } // = 0, 1, 2
+
+    // 对某个 flag 的质押者(赌徒)
+    mapping(uint256 => address[]) public flagBettors;
 
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
     function _contractUpgradeTo(address _newImplementation) public {}
@@ -71,13 +69,13 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         __ERC1155_init("");
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
-        _disableInitializers();
     }
 
     // lock the implementation contract for future reinitializations for safety.
-    // constructor() {
-    //     _disableInitializers();
-    // }
+    // Prevent `malicious initialize()` again! 
+    constructor() {
+        _disableInitializers();
+    }
 
     // function getOwner() view public returns(address) { return owner(); }
     function getNewestFlagId() view public returns(uint256) { return flagId; }
@@ -101,21 +99,19 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
 
     function createFlag(string calldata arTxId) public payable {
         bytes32 txHash = keccak256(abi.encodePacked(arTxId));
-        // 暂时移除 12.20
+
         // require(txTo[txHash] == 0, "Asset already exists");
+
         uint _amt = msg.value;
 
         flags[flagId] = Flag(flagId, arTxId, msg.sender, FlagStatus.Undone); // from 0.
-        // flagStatus[flagId] =  // mark Undone
-        // userFlags[msg.sender].push(flagId);
         txTo[txHash] = flagId;
 
-        // 记录质押份额
-        pool[flagId] += _amt;
-        selfpool[flagId] += _amt;
-
-        flagId = flagId + 1;
-
+        unchecked {  // 记录质押份额
+            pool[flagId] += _amt;
+            selfpool[flagId] += _amt;
+            flagId = flagId + 1;
+        }
         // mint `msg.value`  份 1 wei = 1 份
         _mint(msg.sender, flagId-1, _amt, "");
         emit CreateFlag(flagId-1, msg.sender, _amt, arTxId);
@@ -125,8 +121,11 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
 
     function gamblePledge(uint256 id) public payable {
         require(id < flagId, "Flag does not exist.");
+
         Flag storage flag = flags[id];
         require(flag.flager != msg.sender, "Flag owner can not gamble lol.");
+        require(flag.status == FlagStatus.Undone, "Flag is over.");
+
         uint256 _amt = msg.value;
         flagBettors[id].push(msg.sender);
         // 记录质押份额
@@ -141,7 +140,7 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
     function setFlagDone(uint256 id) public onlyOwner {
         require(id < flagId, "Flag does not exist.");
         Flag storage flag = flags[id];
-        // require(flag.status == FlagStatus.Undone, "Flag has already been changed!.");
+        require(flag.status == FlagStatus.Undone, "Flag has already been changed!.");
 
         flag.status = FlagStatus.Done;  // set `1`
         
@@ -150,12 +149,9 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
     }
 
     function _resetShares(uint256 id) internal {
-        require(id < flagId, "Flag does not exist.");
         Flag memory flag = flags[id];
 
-        require(flag.status == FlagStatus.Done, "Flag is not done yet.");
-
-        // rest share, mint NFT.
+        // reset share, mint NFT.
         _mint(flag.flager, id, betspool[id], "bonus");
         selfpool[id] = selfpool[id] + betspool[id];
 
@@ -195,7 +191,7 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
     function setFlagRug(uint256 id) public onlyOwner {
         require(id < flagId, "Flag does not exist.");
         Flag storage flag = flags[id];
-        // require(flag.status == FlagStatus.Undone , "Flag has already been changed!.");
+        require(flag.status == FlagStatus.Undone , "Flag has already been changed!.");
 
         flag.status = FlagStatus.Rug; // set `2`
 
