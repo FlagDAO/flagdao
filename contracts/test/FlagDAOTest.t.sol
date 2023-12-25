@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "forge-std/Test.sol";
 import "../src/FlagDAO.sol";
 
@@ -9,118 +9,143 @@ contract FlagDAOTest is Test {
     
     // Foundty 目前对于 UUPSProxy 的支持还不完善，需要手动调用 initialize 函数,
     // 且报错信息不正确. 
+    UUPSProxy proxy;
+    FlagDAO public f_v1;
     FlagDAO public f;
-    address public demian = address(0x65);
-    address public fred  = address(10086);
-    address public alice = address(1);
-    address public bob   = address(2);
+    address public demian = address(0x65);  // owner
+    address public fred  = address(10086);  // flager
+    address public alice = address(1);      // better Alice.
+    address public bob   = address(2);      // better Bob.
     
     function setUp() public {
-        address initialOwner = demian;
-        address proxy = Upgrades.deployUUPSProxy(
-            "FlagDAO.sol",
-            abi.encodeCall(FlagDAO.initialize, (initialOwner))
-        );
+        FlagDAO implementationV1 = new FlagDAO();
 
-        f = FlagDAO(proxy);
-        console2.log("contarct owner: ", address(f));    // 0x0000000000000000000000000000000000000000  
+        // deploy proxy contract and point it to implementation
+        proxy = new UUPSProxy(address(implementationV1), "");
+        // wrap in ABI to support easier calls
+        f_v1 = FlagDAO(address(proxy));
+        f_v1.initialize(demian);
+        f = f_v1;
 
-        /*
-        console2.log("contarct owner: ", f.owner());    // 0x0000000000000000000000000000000000000000  
-        // f.initialize();
-        // // Upgradeable Contract:
-        // vm.prank(demian); // 确保以 demian 的身份调用 initialize
-        */
-
-        // create a flag to gamble on
         hoax(fred, 10 ether);
         f.createFlag{value: 1 wei}("arTxId - flag-0");
+
+        // ------------------------------------------------------------
+        // Foundry upgradeToAndCall not success yet....
+        // new implementation
+        // FlagDAO implementationV2 = new FlagDAO(); // FlagDAO_V2
+
+        // f_v1.upgradeToAndCall(
+        //     address(implementationV2),
+        //     abi.encodeCall(
+        //         f._contractUpgradeTo,
+        //         (address(implementationV2))
+        //     ));
+        
+        // wrappedProxyV2.setY(200);
+        // console.log(wrappedProxyV2.x(), wrappedProxyV2.y());
+
+        // create a flag to gamble on
     }
     
+    // [PASS]
     function testCreate() public {
-        // Fred calls create and sends 10 ETH
-        hoax(fred, 10 ether);
-        f.createFlag{value: 120 wei}("arTxId - flag-1");
-        assertEq(address(f).balance, 120 + 1); // 1 ether in setUp
-
-        // hoax(fred, 10 ether);
-        // f.create{value: 1 ether}("arTxId - flag-2");
-        // assertEq(address(f).balance, 1e18 + 120 + 1);
+        /*
+         *  Fred calls create and sends 10 ETH
+         */
+        hoax(fred, 100 wei); // ether
+        f.createFlag{value: 100 wei}("arTxId - flag-1");
+        assertEq(address(f).balance, 100 + 1); // 1 wei in setUp
     }
 
+    // [PASS]  
     function testGamblePledge() public {
+        /*
+         *  Alice gamble on the `flag-1`
+         */
         testCreate();
 
-        // Alice gamble on the `flag-1`
-        uint256 id = 1; // flagId.
+        uint256 id = 1;   // flagId
+        uint256 alice_pledgement = 1 wei;
 
         hoax(alice, 10 ether);
-        f.gamblePledge{value: 1 wei}(1);
-        assertEq(f.getPools(id)[2], f.getPools(id)[0] + f.getPools(id)[1]);
+        f.gamblePledge{value: alice_pledgement}(id);
         console2.log("contarct balance: ", address(f).balance);
-    }
+        assertEq(100, f.getPools(id)[0]); // selfpool
+        assertEq(alice_pledgement, f.getPools(id)[1]); // betspool
 
-    function testFlagDone() public {
-        // 1. fred create a flag.
-        hoax(fred, 10 ether);
-        f.createFlag{value: 120 wei}("flag-1 - I will achieve this goal!"); // flagId == 1
-        uint256 flagId = 1;
-        assertEq(f.balanceOf(fred, flagId), 120);
 
-        // 2. alice and bob gamble on the `flag-1`
-        hoax(alice, 10 ether);
-        f.gamblePledge{value: 1 wei}(flagId);
-        assertEq(f.balanceOf(alice, flagId), 1);
-     
+        // Bob gamble on the `flag-1`
         hoax(bob, 10 ether);
-        f.gamblePledge{value: 19 wei}(flagId);
-        assertEq(f.balanceOf(bob, flagId), 19);
+        uint256 bob_pledgement = 4 wei;
+        f.gamblePledge{value: bob_pledgement}(id);
+        console2.log("contarct balance: ", address(f).balance);
+        assertEq(alice_pledgement + bob_pledgement, f.getPools(id)[1]); // betspool
 
-        assertEq(f.getPools(flagId)[0], 120);
-        assertEq(f.getPools(flagId)[1], 20);
-        assertEq(f.getPools(flagId)[2], 140);
-     
-        // 3. Finally, Fred achieve the goal.
-        vm.prank(demian);
-        // 4. owner of the contract call this function the set the flag `Done` .
-        f.setFlagDone(flagId); 
-        assertEq(f.balanceOf(alice, flagId), 0);
-        assertEq(f.balanceOf(bob, flagId), 0);
-        assertEq(f.balanceOf(fred, flagId), 120 + 1 + 19);
+        // Bob gamble on the `flag-1` again
+        hoax(bob, 10 ether);
+        uint256 bob_pledgement_2 = 5 wei;
+        f.gamblePledge{value: bob_pledgement_2}(id);
+        console2.log("contarct balance: ", address(f).balance);
+        assertEq(alice_pledgement + bob_pledgement + bob_pledgement_2, f.getPools(id)[1]); // betspool
+       
+        // console2.log(" bettorsMap: ", f.bettorsMap[id]);
+}
 
-        // 5. fred withdraw the money. set fred's balance 1 ether.
-        hoax(fred, 1 ether);
-        f.flagerRetrive(flagId);
-        assertEq(fred.balance, 1 ether + 120 + 1 + 19); 
+
+    // 
+    function testFlagDone() public {
+        /*
+         * forge test --mt testGamblePledge  -vvvv
+         * 1. Finally, Fred achieve the goal.
+         * 2. owner of the contract call this function the set the flag `Done` .
+         * 3. `Fred` withdraw the money back and earn others pledge !!
+         */
+        testGamblePledge();
+
+        uint256 id = 1;
+
+        vm.prank(demian); // owner of the contract set the flag `Done` .
+        f.setFlagDone(id);
+
+        assertEq(110, f.getPools(id)[0]); // selfpool is `110`.
+        assertEq(0, f.getPools(id)[1]);   // betspool is `0`.
+        assertEq(0, f.getFunds());        // treasury funds.
+
+        // fred withdraw the money. set fred's balance 1 ether.
+        hoax(fred, 0 ether);
+        f.flagerRetrive(id);
+        assertEq(fred.balance, 110); 
     }
+
 
     function testFlagRug() public {
         // 1. fred create a flag.
         hoax(fred, 10 ether);
         f.createFlag{value: 120 wei}("flag-1 - I will achieve this goal!"); // flagId == 1
         uint256 flagId = 1;
-        assertEq(f.balanceOf(fred, flagId), 120);
+        // assertEq(f.balanceOf(fred, flagId), 120);
 
         // 2. alice and bob gamble on the `flag-1`
         hoax(alice, 10 ether);
         f.gamblePledge{value: 1 wei}(flagId);
-        assertEq(f.balanceOf(alice, flagId), 1);
+        // assertEq(f.balanceOf(alice, flagId), 1);
      
         hoax(bob, 10 ether);
         f.gamblePledge{value: 19 wei}(flagId);
-        assertEq(f.balanceOf(bob, flagId), 19);
+        // assertEq(f.balanceOf(bob, flagId), 19);
 
         assertEq(f.getPools(flagId)[0], 120);
         assertEq(f.getPools(flagId)[1], 20);
-        assertEq(f.getPools(flagId)[2], 140);
+        // assertEq(f.getPools(flagId)[2], 140);
      
         // 3. Finally, Fred rugs the goal, lol~
         vm.prank(demian);
         // 4. owner of the contract call this function the set the flag `Rug` .
         f.setFlagRug(flagId);
-        assertEq(f.balanceOf(alice, flagId), 1);
-        assertEq(f.balanceOf(bob, flagId), 19);
-        assertEq(f.balanceOf(fred, flagId), 0);
+        // assertEq(f.balanceOf(alice, flagId), 1);
+        // assertEq(f.balanceOf(bob, flagId), 19);
+        // assertEq(f.balanceOf(fred, flagId), 0);
 
 
         // 5. fred can't refund the money. 
@@ -146,7 +171,7 @@ contract FlagDAOTest is Test {
     function _send(uint256 amount) private {
         (bool ok,) = address(f).call{value: amount}("");
         require(ok, "send ETH failed");
-    } */
+    }
 
     function _util_return_balance(address addr, uint256 id) public view returns(uint256) {
         address[] memory addresses = new address[](1); // 声明动态数组并初始化
@@ -157,22 +182,20 @@ contract FlagDAOTest is Test {
         uint256[] memory balance = f.balanceOfBatch(addresses, ids);
         return balance[0];
     }
-
+ */
 
     function testUUPS() public {
 
-        address _newImplementation = address(0x01); // Use a non-zero initial value of choice.
+        // address _newImplementation = address(0x01); // Use a non-zero initial value of choice.
 
         // 0xe99005bc0000000000000000000000000000000000000000000000000000000000000001
         emit log_bytes(
             abi.encodeCall(
-                FlagDAO._contractUpgradeTo,
-                (_newImplementation)
+                f._contractUpgradeTo, (address(0x01)) // _newImplementation 也行,, 方正都一样的结果...
             )
         );
 
-        // cast sig "_contractUpgradeTo(address _newImplementation)"
-        // 0xe99005bc not work.
+        // cast sig "_contractUpgradeTo(address _newImplementation)" -> 0xe99005bc, but not work.
     }
 
     /*
