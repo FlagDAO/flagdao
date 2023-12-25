@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+// import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
+contract UUPSProxy is ERC1967Proxy {
+    constructor(address _implementation, bytes memory _data)
+        ERC1967Proxy(_implementation, _data)
+    {}
+}
+
 // import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Reference:
@@ -15,7 +23,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // - https://blog.thirdweb.com/guides/how-to-upgrade-smart-contracts-upgradeable-smart-contracts/
 // - https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 
-contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableUpgradeable {
+contract FlagDAO is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     event CreateFlag(uint256 indexed flagId, address indexed sender, uint256 indexed amt, string arTxId);
     event GamblePledge(uint256 indexed flagId, address indexed sender, uint256 indexed amt, address flager);
     // event RemoveFlag(uint256 indexed flagId, address indexed sender);
@@ -33,24 +41,30 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         uint256 id; 
         string arTxId;        // arweave transaction id
         address flager;
+        uint256 amt;          // flager pledged amt.
         FlagStatus status;    // flag's status : `undone / Done / Rug`
-        // address[100] bettors; // up to 100 bettors
+
+        address[] bettors;    // up to 100 bettors
+        uint256[] bet_vals;   // up to 100 bettors
     }
+    
+    // mapping records whether a user has pledged before 
+    mapping(uint256 => mapping(address => uint256)) public bettorsMap; // flagId => (address => amt
+
+    // used for distribution.
+    mapping(uint256 => mapping(address => uint256)) public bettorShares;
 
     // 每个作品的唯一 ID
-    uint256 public flagId; //flagId; [0,1,2..]
+    uint256 public flagId;   // flagId; [0,1,2..]
     mapping(uint256 => Flag) public flags;
 
-    // 一个用户多个 Flag
-    // mapping(address => uint256[]) public userFlags;
     // AweweavetxId => Flag id [0,1,2..]
     mapping(bytes32 => uint256) public txTo;
 
-    mapping(uint256 => uint256) public pool;     // Total pledged amt.
     mapping(uint256 => uint256) public selfpool; // Total pledged amt by flager
     mapping(uint256 => uint256) public betspool; // Total pledged amt by bettors
-    mapping(uint256 => mapping(address => uint256)) public gamblepool; // a single bettor's pledgemeny, used for distribution.
     
+    uint256 public funds;    // treasury funds 
     uint256 public constant MAX_LEVERAGE = 5;    // Maximum leverage
 
     enum TradeType {
@@ -60,13 +74,13 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
     } // = 0, 1, 2
 
     // 对某个 flag 的质押者(赌徒)
-    mapping(uint256 => address[]) public flagBettors;
+    // mapping(uint256 => address[]) public flagBettors;
 
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
     function _contractUpgradeTo(address _newImplementation) public {}
     
     function initialize(address initialOwner) initializer public {
-        __ERC1155_init("");
+        // __ERC1155_init("");
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
     }
@@ -79,8 +93,9 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
 
     // function getOwner() view public returns(address) { return owner(); }
     function getNewestFlagId() view public returns(uint256) { return flagId; }
-    function getPools(uint256 id) public view returns(uint256[3] memory) {
-        return [selfpool[id], betspool[id], pool[id]];
+    function getFunds() view public returns(uint256) { return funds; }
+    function getPools(uint256 id) public view returns(uint256[2] memory) {
+        return [selfpool[id], betspool[id]];
     }
     // function getFlagById(uint256 id) view public returns(Flag memory) { return flags[id]; }
 
@@ -104,16 +119,24 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
 
         uint _amt = msg.value;
 
-        flags[flagId] = Flag(flagId, arTxId, msg.sender, FlagStatus.Undone); // from 0.
+        flags[flagId] = Flag(
+            flagId,
+            arTxId, 
+            msg.sender,
+            _amt,
+            FlagStatus.Undone, 
+            new address[](0), 
+            new uint256[](0)
+        ); // from 0.
+
         txTo[txHash] = flagId;
 
-        unchecked {  // 记录质押份额
-            pool[flagId] += _amt;
+        unchecked {
             selfpool[flagId] += _amt;
             flagId = flagId + 1;
         }
-        // mint `msg.value`  份 1 wei = 1 份
-        _mint(msg.sender, flagId-1, _amt, "");
+
+        // _mint(msg.sender, flagId-1, _amt, "");
         emit CreateFlag(flagId-1, msg.sender, _amt, arTxId);
     }
 
@@ -125,18 +148,29 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         Flag storage flag = flags[id];
         require(flag.flager != msg.sender, "Flag owner can not gamble lol.");
         require(flag.status == FlagStatus.Undone, "Flag is over.");
+        require(flag.bettors.length < 100, "Too many bettors.");
 
         uint256 _amt = msg.value;
-        flagBettors[id].push(msg.sender);
+
+        if(bettorsMap[id][msg.sender] != 0) {   // pledged before.
+            uint256 _oldAmt = bettorsMap[id][msg.sender];
+            bettorsMap[id][msg.sender] = _oldAmt + _amt;
+            flag.bet_vals[id] = _oldAmt + _amt;
+        } else {   // haven't pledged before.
+            flag.bettors.push(msg.sender);
+            flag.bet_vals.push(_amt);
+            bettorsMap[id][msg.sender] = _amt;
+        }
+
         // 记录质押份额
-        pool[id] += _amt;
+        // pool[id] += _amt;
         betspool[id] += _amt;
 
-        _mint(msg.sender, id, _amt, "");
+        // _mint(msg.sender, id, _amt, "");
         emit GamblePledge(flagId, msg.sender, _amt, flag.flager);
     }
     
-    // Only contract deployer can change .
+    // Only contract deployer can change.
     function setFlagDone(uint256 id) public onlyOwner {
         require(id < flagId, "Flag does not exist.");
         Flag storage flag = flags[id];
@@ -151,19 +185,19 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
     function _resetShares(uint256 id) internal {
         Flag memory flag = flags[id];
 
-        // reset share, mint NFT.
-        _mint(flag.flager, id, betspool[id], "bonus");
-        selfpool[id] = selfpool[id] + betspool[id];
-
-        // reset share, burn NFT.
-        for (uint i = 0; i < flagBettors[id].length; i++) {
-            address bettor = flagBettors[id][i];
-            // uint256 amt = balanceOf[bettor][id]; 
-            uint256 amt = balanceOf(bettor, id);
-            _burn(bettor, id, amt);
-            pool[id] -= amt;
+        // reset share.
+        uint256 _total_share = 0;
+        for (uint i = 0; i < flag.bettors.length; i++) {
+            _total_share = _total_share + flag.bet_vals[i];
         }
+        
+        uint256 share = Math.min(
+            MAX_LEVERAGE * flag.amt + _total_share,
+            flag.amt + _total_share
+        );
 
+        funds = funds + (selfpool[id] + betspool[id]) - share;
+        selfpool[id] = share;
         betspool[id] = 0;
     }
 
@@ -176,8 +210,6 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
 
         uint256 refund = selfpool[id];
         selfpool[id] = 0;
-        pool[id] = 0;
-        betspool[id] = 0;
 
         // DO NOT BURN NFT as a bonus.
 
@@ -205,23 +237,25 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         require(flag.status == FlagStatus.Rug, "Flag is not Rug yet lol.");
 
         // rest share, burn NFT.
-        _burn(flag.flager, id, selfpool[id]);
+        // _burn(flag.flager, id, selfpool[id]);
 
+        uint256 _delta = 0;
         // reset share, burn NFT.
-        for (uint i = 0; i < flagBettors[id].length; i++) {
-            address bettor = flagBettors[id][i];
+        for (uint i = 0; i < flag.bettors.length; i++) {
+            address bettor = flag.bettors[id];
             // uint256 amt = balanceOf[bettor][id];
-            uint256 amt = balanceOf(bettor, id);
-            uint256 shares = selfpool[id] * amt / betspool[id];
+            uint256 amt = flag.bet_vals[id];
+            uint256 shares = amt + amt / betspool[id];
 
             // 针对 $100, bettors = [1, 10000] 的情况
             uint256 realShares = Math.min(
-                Math.max(shares, amt),
+                shares,
                 MAX_LEVERAGE * amt
             );
-            gamblepool[id][bettor] = realShares;
+            _delta = _delta + realShares;
+            bettorShares[id][bettor] = realShares;
         }
-        pool[id] = 0;
+        funds = funds + (selfpool[id] + betspool[id]) - _delta;
         selfpool[id] = 0;
         betspool[id] = 0;
     }
@@ -231,18 +265,24 @@ contract FlagDAO is Initializable, UUPSUpgradeable, ERC1155Upgradeable, OwnableU
         Flag memory flag = flags[id];
         require(flag.flager != msg.sender, "Flag owner can not refund.");
         require(flag.status == FlagStatus.Rug, "Flag is not rug yet.");
-        require(gamblepool[id][msg.sender] > 0, "No privilege to refund.");
+        require(bettorShares[id][msg.sender] > 0, "No privilege to refund.");
 
-        uint256 _amt = gamblepool[id][msg.sender];
+        uint256 _amt = bettorShares[id][msg.sender];
 
-        gamblepool[id][msg.sender] = 0;
+        bettorShares[id][msg.sender] = 0;
+        
 
         (bool sent, ) = payable(msg.sender).call{value: _amt}("");
         require(sent, "Failed to send Ether");
         emit FlagRetrive(flagId, msg.sender, _amt);
     }
 
-    function uri(uint256 id) public view override returns (string memory) {
-        return flags[id].arTxId;
+    // function uri(uint256 id) public view override returns (string memory) {
+    //     return flags[id].arTxId;
+    // }
+
+    function retrieveTreasuryFunds() onlyOwner public {
+        (bool sent, ) = payable(msg.sender).call{value: funds}("");
+        require(sent, "Failed to send Ether");
     }
 }
