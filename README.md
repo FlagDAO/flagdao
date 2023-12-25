@@ -8,7 +8,7 @@ FlagDAO 是一个为爱立 Flag 星人准备的 DAO，在本 DAO 中，每个人
 1. 谨慎乐观投资自己 
 2. 嘻嘻哈哈围观他人
 
-<img width="949" alt="image" src="https://github.com/FlagDAO/flagdao/assets/33189338/2da90e52-ac5a-47b6-ae1e-1cd0a0ff4def">
+<img width="1103" alt="image" src="https://github.com/FlagDAO/flagdao/assets/33189338/607f4fcf-ca61-453d-86aa-795c751d6cc6">
 
 
 ### 应用场景、组织：
