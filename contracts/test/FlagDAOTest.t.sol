@@ -55,10 +55,16 @@ contract FlagDAOTest is Test {
          */
         hoax(fred, 100 wei); // ether
         f.createFlag{value: 100 wei}("arTxId - flag-1");
+
+        uint256 id = 1;
+        assertEq(100, f.getPools(id)[0]); // selfpool
+        assertEq(0,   f.getPools(id)[1]); // betspool
+        assertEq(0,   f.getFunds());      // treasury funds.
+
         assertEq(address(f).balance, 100 + 1); // 1 wei in setUp
     }
 
-    // [PASS]  
+    // [PASS]
     function testGamblePledge() public {
         /*
          *  Alice gamble on the `flag-1`
@@ -90,10 +96,9 @@ contract FlagDAOTest is Test {
         assertEq(alice_pledgement + bob_pledgement + bob_pledgement_2, f.getPools(id)[1]); // betspool
        
         // console2.log(" bettorsMap: ", f.bettorsMap[id]);
-}
+    }
 
 
-    // 
     function testFlagDone() public {
         /*
          * forge test --mt testGamblePledge  -vvvv
@@ -120,51 +125,44 @@ contract FlagDAOTest is Test {
 
 
     function testFlagRug() public {
-        // 1. fred create a flag.
-        hoax(fred, 10 ether);
-        f.createFlag{value: 120 wei}("flag-1 - I will achieve this goal!"); // flagId == 1
-        uint256 flagId = 1;
-        // assertEq(f.balanceOf(fred, flagId), 120);
+        /*
+         * forge test --mt testFlagRug  -vvvv
+         * 0. Finally, Fred fail the goal.
+         * 1. owner of the contract call this function the set the flag `Rug` .
+         * 2. fred can't refund the money, but bettors will get the money and bonus back!
+         */
+        testGamblePledge();
+        uint256 id = 1;
 
-        // 2. alice and bob gamble on the `flag-1`
-        hoax(alice, 10 ether);
-        f.gamblePledge{value: 1 wei}(flagId);
-        // assertEq(f.balanceOf(alice, flagId), 1);
-     
-        hoax(bob, 10 ether);
-        f.gamblePledge{value: 19 wei}(flagId);
-        // assertEq(f.balanceOf(bob, flagId), 19);
-
-        assertEq(f.getPools(flagId)[0], 120);
-        assertEq(f.getPools(flagId)[1], 20);
-        // assertEq(f.getPools(flagId)[2], 140);
-     
-        // 3. Finally, Fred rugs the goal, lol~
+        // 1. owner of the contract call this function the set the flag `Rug` .
         vm.prank(demian);
-        // 4. owner of the contract call this function the set the flag `Rug` .
-        f.setFlagRug(flagId);
-        // assertEq(f.balanceOf(alice, flagId), 1);
-        // assertEq(f.balanceOf(bob, flagId), 19);
-        // assertEq(f.balanceOf(fred, flagId), 0);
+        f.setFlagRug(id);
 
+        assertEq(0, f.getPools(id)[0]);   // selfpool is `0`.
+        assertEq(0, f.getPools(id)[1]);   // betspool is `0`.
+        assertEq(6, f.getBettorShares(id, alice));  // alice can get 6 wei.
+        assertEq(54, f.getBettorShares(id, bob));   // bob can get 54 wei.
+        assertEq(50, f.getFunds());       // treasury funds.
 
-        // 5. fred can't refund the money. 
         // hoax(fred, 0 ether);
-        // f.gamblersRetrive(flagId);
+        // f.gamblersRetrive(id);
         // vm.expectRevert(bytes("Flag owner can not refund."));
         // err.throwError();  [Bug] here ?
         //     and gamblers split the payment.
 
         // refundGambler
         hoax(alice, 0);
-        f.gamblersRetrive(flagId);
-        assertEq(alice.balance, 5);
+        f.gamblersRetrive(id);
+        assertEq(alice.balance, 6); 
+        console2.log("alice balance:", alice.balance);
+
 
         hoax(bob, 0);
-        f.gamblersRetrive(flagId);
-        assertEq(bob.balance, 95);
-
+        f.gamblersRetrive(id);
+        assertEq(bob.balance, 54); 
+        console2.log("bob balance:", bob.balance);
     }
+
 
 
     /*
@@ -183,6 +181,239 @@ contract FlagDAOTest is Test {
         return balance[0];
     }
  */
+
+
+
+    /*  ------------------------------------------------------------------------------------
+     *  Alice gamble on the `flag-1`
+     *  ------------------------------------------------------------------------------------ */
+    function test_1_10000_GamblePledge() public {
+        /*
+         *  Alice gamble on the `flag-1`
+         */
+        testCreate();     // flager Fred pledge 100 wei.
+
+        uint256 id = 1;   // flagId
+        uint256 alice_pledgement = 1 wei;
+
+        hoax(alice, 10 ether);
+        f.gamblePledge{value: alice_pledgement}(id);
+        console2.log("contarct balance: ", address(f).balance);
+        assertEq(100, f.getPools(id)[0]); // selfpool
+        assertEq(alice_pledgement, f.getPools(id)[1]); // betspool
+
+
+        // Bob gamble on the `flag-1`
+        hoax(bob, 10 ether);
+        uint256 bob_pledgement = 10000 wei;
+        f.gamblePledge{value: bob_pledgement}(id);
+        console2.log("contarct balance: ", address(f).balance);
+        assertEq(alice_pledgement + bob_pledgement, f.getPools(id)[1]); // betspool
+    }
+
+    function test_1_10000_FlagDone() public {
+        /*
+         * forge test --mt testGamblePledge  -vvvv
+         * 1. Finally, Fred achieve the goal.
+         * 2. owner of the contract call this function the set the flag `Done` .
+         * 3. `Fred` withdraw the money back and earn others pledge !!
+         */
+        test_1_10000_GamblePledge();
+
+        uint256 id = 1;
+
+        vm.prank(demian); // owner of the contract set the flag `Done` .
+        f.setFlagDone(id);
+
+        assertEq(600, f.getPools(id)[0]);   // selfpool is `110`.
+        assertEq(0,   f.getPools(id)[1]);   // betspool is `0`.
+        assertEq(100+1+10000 - 600,   f.getFunds());        // treasury funds.
+
+        // fred withdraw the money. set fred's balance 1 ether.
+        hoax(fred, 0 ether);
+        f.flagerRetrive(id);
+        assertEq(fred.balance, 600); 
+    }
+
+    function test_1_10000_FlagRug() public {
+        /*
+         * forge test --mt testGamblePledge  -vvvv
+         * 1. Finally, Fred achieve the goal.
+         * 2. owner of the contract call this function the set the flag `Done` .
+         * 3. `Fred` withdraw the money back and earn others pledge !!
+         */
+        test_1_10000_GamblePledge();
+
+        uint256 id = 1;
+
+        vm.prank(demian); // owner of the contract set the flag `Done` .
+        f.setFlagRug(id);
+        console2.log("/.....", f.getPools(id)[0], f.getPools(id)[1]);    // 0, 0
+
+        assertEq(0, f.getPools(id)[0]);   // selfpool is `0`.
+        assertEq(0, f.getPools(id)[1]);   // betspool is `0`.
+        assertEq(1, f.getBettorShares(id, alice));  // alice can get 1 wei.
+        assertEq(10099, f.getBettorShares(id, bob));   // bob can get 54 wei.
+        assertEq(1, f.getFunds());       // treasury funds.
+
+        // refundGambler
+        hoax(alice, 0);
+        f.gamblersRetrive(id);
+        assertEq(alice.balance, 1); 
+        console2.log("alice balance:", alice.balance);
+
+
+        hoax(bob, 0);
+        f.gamblersRetrive(id);
+        assertEq(bob.balance, 10099); 
+        console2.log("bob balance:", bob.balance);
+    }
+
+
+
+    /*  ------------------------------------------------------------------------------------
+     *  Alice gamble on the `flag-1`
+     *  ------------------------------------------------------------------------------------ */
+    function test_1_GamblePledge() public {
+        /*
+         *  Alice gamble on the `flag-1`
+         */
+        testCreate();     // flager Fred pledge 100 wei.
+
+        uint256 id = 1;   // flagId
+        uint256 alice_pledgement = 1 wei;
+
+        hoax(alice, 10 ether);
+        f.gamblePledge{value: alice_pledgement}(id);
+        console2.log("contarct balance: ", address(f).balance);
+        assertEq(100, f.getPools(id)[0]); // selfpool
+        assertEq(alice_pledgement, f.getPools(id)[1]); // betspool
+    }
+
+    function test_1_FlagDone() public {
+        /*
+         * forge test --mt testGamblePledge  -vvvv
+         * 1. Finally, Fred achieve the goal.
+         * 2. owner of the contract call this function the set the flag `Done` .
+         * 3. `Fred` withdraw the money back and earn others pledge !!
+         */
+        test_1_GamblePledge();
+
+        uint256 id = 1;
+
+        vm.prank(demian); // owner of the contract set the flag `Done` .
+        f.setFlagDone(id);
+
+        assertEq(101, f.getPools(id)[0]);   // selfpool is `110`.
+        assertEq(0,   f.getPools(id)[1]);   // betspool is `0`.
+        assertEq(0,   f.getFunds());        // treasury funds.
+
+        // fred withdraw the money. set fred's balance 1 ether.
+        hoax(fred, 0 ether);
+        f.flagerRetrive(id);
+        assertEq(fred.balance, 101); 
+    }
+
+    function test_1_FlagRug() public {
+        /*
+         * forge test --mt testGamblePledge  -vvvv
+         * 1. Finally, Fred achieve the goal.
+         * 2. owner of the contract call this function the set the flag `Done` .
+         * 3. `Fred` withdraw the money back and earn others pledge !!
+         */
+        test_1_GamblePledge();
+
+        uint256 id = 1;
+
+        vm.prank(demian); // owner of the contract set the flag `Done` .
+        f.setFlagRug(id);
+        console2.log("/.....", f.getPools(id)[0], f.getPools(id)[1]);    //0, 0
+
+        assertEq(0, f.getPools(id)[0]);             // selfpool is `0`.
+        assertEq(0, f.getPools(id)[1]);             // betspool is `0`.
+        assertEq(6, f.getBettorShares(id, alice));  // alice can get 1 wei.
+        assertEq(100 + 1 - 6, f.getFunds());        // treasury funds.
+
+        // refundGambler
+        hoax(alice, 0);
+        f.gamblersRetrive(id);
+        assertEq(alice.balance, 6); 
+        console2.log("alice balance:", alice.balance);
+
+    }
+
+
+    /*  ------------------------------------------------------------------------------------
+     *  Alice gamble on the `flag-1`
+     *  ------------------------------------------------------------------------------------ */
+    function test_10000_GamblePledge() public {
+        /*
+         *  Alice gamble on the `flag-1`
+         */
+        testCreate();     // flager Fred pledge 100 wei.
+
+        uint256 id = 1;   // flagId
+        uint256 alice_pledgement = 10000 wei;
+
+        hoax(alice, 10 ether);
+        f.gamblePledge{value: alice_pledgement}(id);
+        console2.log("contarct balance: ", address(f).balance);
+        assertEq(100, f.getPools(id)[0]); // selfpool
+        assertEq(alice_pledgement, f.getPools(id)[1]); // betspool
+    }
+
+    function test_10000_FlagDone() public {
+        /*
+         * forge test --mt testGamblePledge  -vvvv
+         * 1. Finally, Fred achieve the goal.
+         * 2. owner of the contract call this function the set the flag `Done` .
+         * 3. `Fred` withdraw the money back and earn others pledge !!
+         */
+        test_10000_GamblePledge();
+
+        uint256 id = 1;
+
+        vm.prank(demian); // owner of the contract set the flag `Done` .
+        f.setFlagDone(id);
+
+        assertEq(600, f.getPools(id)[0]);   // selfpool is `110`.
+        assertEq(0,   f.getPools(id)[1]);   // betspool is `0`.
+        assertEq(9500,   f.getFunds());        // treasury funds.
+
+        // fred withdraw the money. set fred's balance 1 ether.
+        hoax(fred, 0 ether);
+        f.flagerRetrive(id);
+        assertEq(fred.balance, 600); 
+    }
+
+    function test_10000_FlagRug() public {
+        /*
+         * forge test --mt testGamblePledge  -vvvv
+         * 1. Finally, Fred achieve the goal.
+         * 2. owner of the contract call this function the set the flag `Done` .
+         * 3. `Fred` withdraw the money back and earn others pledge !!
+         */
+        test_10000_GamblePledge();
+
+        uint256 id = 1;
+
+        vm.prank(demian); // owner of the contract set the flag `Done` .
+        f.setFlagRug(id);
+        console2.log("/.....", f.getPools(id)[0], f.getPools(id)[1]);    //0, 0
+
+        assertEq(0, f.getPools(id)[0]);             // selfpool is `0`.
+        assertEq(0, f.getPools(id)[1]);             // betspool is `0`.
+        assertEq(10100, f.getBettorShares(id, alice));  // alice can get 1 wei.
+        assertEq(0, f.getFunds());        // treasury funds.
+
+        // refundGambler
+        hoax(alice, 0);
+        f.gamblersRetrive(id);
+        assertEq(10100, alice.balance); 
+        console2.log("alice balance:", alice.balance);
+    }
+
+
 
     function testUUPS() public {
 
