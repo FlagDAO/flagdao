@@ -5,10 +5,18 @@ import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "forge-std/Test.sol";
 import "../src/FlagDAO.sol";
 
+/*
+Test commands: 
+
+$ forge test --mt testCreate  -vvvvv
+$ forge test --mt testGamblePledge  -vvvvv
+$ forge test --mt testFlagDone  -vvvvv
+$ forge test --mt testUUPS  -vvvvv
+*/
+
 contract FlagDAOTest is Test {
-    
-    // Foundty 目前对于 UUPSProxy 的支持还不完善，需要手动调用 initialize 函数,
-    // 且报错信息不正确. 
+
+ 
     UUPSProxy proxy;
     FlagDAO public f_v1;
     FlagDAO public f;
