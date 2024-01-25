@@ -30,7 +30,7 @@ const wagmiConfig = createConfig({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains}>
+      <RainbowKitProvider locale='en' chains={chains}>
         <App />
       </RainbowKitProvider>
     </WagmiConfig>

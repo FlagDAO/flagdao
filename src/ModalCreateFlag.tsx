@@ -7,7 +7,6 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import { supabaseKey, supabaseUrl } from "./utils/credentials"
 import { createClient } from "@supabase/supabase-js"
 import DatePicker from "react-datepicker";
-import { ContractFunctionExecutionError } from "viem";
 import "react-datepicker/dist/react-datepicker.css";
 import {
   useContractWrite,
@@ -15,7 +14,6 @@ import {
   useContractEvent,
   useAccount,
   useNetwork,
-  useChainId
 } from "wagmi"
 import {
   FLAGDAO_CONTRACT_ADDR,
@@ -107,9 +105,6 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
   }, [watch("name"), watch("goal"), watch("_pledgement")]);
 
 
-
-
-
   const postToSupabase = async (flagId: number) => {
     // if (_data) { // if (_data && onChain && typeof flagId !== "undefined") {
     console.log("To supabase, flag_id and others: ", nameRef.current,address, goalRef.current , pledgementRef.current )
@@ -170,7 +165,7 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
       // flagId : 14n
       // sender : "0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F"
       const { args: arg } = logs[1] as any
-      console.log("`CreateFlag CreateFlag args2`.....", arg)
+      console.log("`CreateFlag args` is .....", arg)
       setFlagId(arg.flagId);
       postToSupabase(arg.flagId);
     },
