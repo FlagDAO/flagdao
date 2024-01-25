@@ -169,7 +169,7 @@ export const ModalCreateFlag: React.FC<PorpsType> = ({
       // arTxId : "aa228340-f44a-4f65-9ee7-6aebfa8668f5"
       // flagId : 14n
       // sender : "0x65d5b68A7878A987e7A19826A7f9Aa6F5F92e10F"
-      const { args: arg } = logs[1]
+      const { args: arg } = logs[1] as any
       console.log("`CreateFlag CreateFlag args2`.....", arg)
       setFlagId(arg.flagId);
       postToSupabase(arg.flagId);
