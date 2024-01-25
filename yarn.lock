@@ -4091,11 +4091,6 @@
   resolved "https://registry.npmmirror.com/@thirdweb-dev/chains/-/chains-0.1.62.tgz#d7a5c8bc71d3dac68c7da44b13b5ea7113a01151"
   integrity sha512-BLJEub6SIDfwktqLhFkeurVQbJp/RZeJLhzjjwxSWE4Kb1K7rv/nNkwRFXd3Hhc46DPJvrHuG3oBwkZgWxWgQw==
 
-"@thirdweb-dev/chains@0.1.62-nightly-c410a1c1-20231218211758":
-  version "0.1.62-nightly-c410a1c1-20231218211758"
-  resolved "https://registry.npmmirror.com/@thirdweb-dev/chains/-/chains-0.1.62-nightly-c410a1c1-20231218211758.tgz#8c60515abb8d63d001d55416b79988c918025052"
-  integrity sha512-eXQGS6wnuEkcJl7EmnHGTXwpbbd1kZeOfzQLNT30t5KKQ8fqs4rlISa6Ri17EQ0lSIIPJ8u7szM7JsjIFWwFKA==
-
 "@thirdweb-dev/contracts-js@1.3.16":
   version "1.3.16"
   resolved "https://registry.npmmirror.com/@thirdweb-dev/contracts-js/-/contracts-js-1.3.16.tgz#264727b40b0f320c01eefcb4295e89c9e9947002"
@@ -4208,29 +4203,6 @@
     yaml "^2.3.1"
     zod "^3.22.3"
 
-"@thirdweb-dev/sdk@4.0.23-nightly-c410a1c1-20231218211758":
-  version "4.0.23-nightly-c410a1c1-20231218211758"
-  resolved "https://registry.npmmirror.com/@thirdweb-dev/sdk/-/sdk-4.0.23-nightly-c410a1c1-20231218211758.tgz#698bb9b52b1c01ebd7ed0ff2d595213e80a23c2c"
-  integrity sha512-jm07Ue53ewrOzVfiX/JPZV1iDxKIggEXHwd5Zl2bFnASgdGh0cvqBvtXVGguQw3TMTbWqDZc5q+xp3ZslOqOLw==
-  dependencies:
-    "@thirdweb-dev/chains" "0.1.62-nightly-c410a1c1-20231218211758"
-    "@thirdweb-dev/contracts-js" "1.3.16"
-    "@thirdweb-dev/crypto" "0.2.0"
-    "@thirdweb-dev/generated-abis" "0.0.1"
-    "@thirdweb-dev/merkletree" "0.2.0"
-    "@thirdweb-dev/storage" "2.0.8-nightly-c410a1c1-20231218211758"
-    abitype "^0.2.5"
-    bn.js "^5.2.1"
-    bs58 "^5.0.0"
-    buffer "^6.0.3"
-    eventemitter3 "^5.0.1"
-    fast-deep-equal "^3.1.3"
-    tiny-invariant "^1.2.0"
-    tweetnacl "^1.0.3"
-    uuid "^9.0.1"
-    yaml "^2.3.1"
-    zod "^3.22.3"
-
 "@thirdweb-dev/storage@2.0.8":
   version "2.0.8"
   resolved "https://registry.npmmirror.com/@thirdweb-dev/storage/-/storage-2.0.8.tgz#ffc4014d46b575d08af2f69ef360d95497773d52"
@@ -4241,20 +4213,10 @@
     form-data "^4.0.0"
     uuid "^9.0.1"
 
-"@thirdweb-dev/storage@2.0.8-nightly-c410a1c1-20231218211758":
-  version "2.0.8-nightly-c410a1c1-20231218211758"
-  resolved "https://registry.npmmirror.com/@thirdweb-dev/storage/-/storage-2.0.8-nightly-c410a1c1-20231218211758.tgz#6d4848b46e257b68a127ba974d3fe03df195d1e8"
-  integrity sha512-CLUqLnK6ll502BX2IRMs2wpkGpSICiMPTZIXHYNTLc9m1LlwUZ+42AMzeAytMjO7/8RzPmmn4leVaGg4bGVh+g==
-  dependencies:
-    "@thirdweb-dev/crypto" "0.2.0"
-    cid-tool "^3.0.0"
-    form-data "^4.0.0"
-    uuid "^9.0.1"
-
 "@thirdweb-dev/wallets@2.3.2":
-  version "2.3.2-nightly-c410a1c1-20231218211758"
-  resolved "https://registry.npmmirror.com/@thirdweb-dev/wallets/-/wallets-2.3.2-nightly-c410a1c1-20231218211758.tgz#56c6051f906bb3aee95499c19b82a7487d3ff422"
-  integrity sha512-LnzKMdWP4ONUCAoZ4xeIgpSzEnvKFDdR7tH0AaQKDaW5Y1/VHSmaPXPazUMyQDA2W4ZyQXWTRzfeZa2djneHRA==
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@thirdweb-dev/wallets/-/wallets-2.3.2.tgz#fa1f82de31514424d5043257c64ea73ec4686e07"
+  integrity sha512-/OIaS7ZV5oNEVAGzR1YOGcZVPxo1irGPMQseC0cFudyBSVDVN1/vCYqQNhwsd+Wf710TqfxU41CJ3cnsYPzAMg==
   dependencies:
     "@account-abstraction/contracts" "^0.5.0"
     "@account-abstraction/sdk" "^0.5.0"
@@ -4271,10 +4233,10 @@
     "@safe-global/safe-core-sdk" "^3.3.4"
     "@safe-global/safe-ethers-adapters" "0.1.0-alpha.17"
     "@safe-global/safe-ethers-lib" "^1.9.4"
-    "@thirdweb-dev/chains" "0.1.62-nightly-c410a1c1-20231218211758"
+    "@thirdweb-dev/chains" "0.1.62"
     "@thirdweb-dev/contracts-js" "1.3.16"
     "@thirdweb-dev/crypto" "0.2.0"
-    "@thirdweb-dev/sdk" "4.0.23-nightly-c410a1c1-20231218211758"
+    "@thirdweb-dev/sdk" "4.0.23"
     "@walletconnect/core" "^2.9.1"
     "@walletconnect/ethereum-provider" "^2.9.1"
     "@walletconnect/jsonrpc-utils" "^1.0.8"
