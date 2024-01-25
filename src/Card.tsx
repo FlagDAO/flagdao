@@ -64,19 +64,20 @@ const Card: React.FC<CardProps> = (props) => {
     const { data: fetchBettorsData, error: fetchBettorsError } = await supabase
       .from('flag')
       .select(`
-        flagId, name,
+        flagId, name, bettors,
         bettors->name,
         bettors->value
       `).eq("flagId", _id)
       .limit(1);
       console.log("fetchBettorsData -  returns:\n", _id, fetchBettorsData)
 
-      if(fetchBettorsData){
-      return {
-        name: fetchBettorsData[0]?.name,
-        value: fetchBettorsData[0]?.value,
-      };
-    }
+      if (fetchBettorsData && fetchBettorsData.length > 0 && fetchBettorsData[0].bettors) {
+        return {
+          name: fetchBettorsData[0].bettors.name,
+          value: fetchBettorsData[0].bettors.value,
+        };
+      }
+      return { name: [], value: [] };
   }
 
   const InsertBettorsToSupabase = async () => {
@@ -85,13 +86,15 @@ const Card: React.FC<CardProps> = (props) => {
       
       console.log("namelist, valuelist", namelist, valuelist);
 
+      const updatedBettors = {
+        name: [...namelist, address],
+        value: [...valuelist, _amt]
+      };
+
       const { data: datatest, error } = await supabase
         .from('flag')
         .update({
-          bettors: {
-            name: [...namelist, ...[address]],
-            value: [...valuelist, ...[_amt]]
-          }
+          bettors: updatedBettors
         })
         // .eq('address->postcode', 90210)  // selector
         .eq("flagId", _id)
@@ -109,8 +112,7 @@ const Card: React.FC<CardProps> = (props) => {
       console.error('Gamble-Pledge transaction failed:', error)
     }
   }
-
-
+  
   // listen the blockchain chage.   // useEffect(() => {  },[])
   // 有 2 个 TS compiler Warning(不用管):
   // 1. Property 'args' does not exist on type 'Log'.ts(2339)
@@ -121,7 +123,7 @@ const Card: React.FC<CardProps> = (props) => {
     eventName: 'GamblePledge',
     listener: (logs) => {
       // logs[0] 里面放的是 _mint 函数 emit 的事件.
-      const { args } = logs[1]
+      const { args } = logs[1] as any; // 跳过类型检查
       console.log("`GamblePledge` Listen ..", args, )
       InsertBettorsToSupabase()   // 更新后端 supabase
     },

@@ -49,6 +49,7 @@ export interface CardProps {
   created_at: string
   startAt: string
   endAt: string
+  // bettors: Array<string>
   // other properties...
 }
 
