@@ -15,6 +15,7 @@ import {
   useAccount,
   useNetwork,
 } from "wagmi"
+
 import {
   FLAGDAO_CONTRACT_ADDR,
   contractABI,
