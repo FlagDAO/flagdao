@@ -1,37 +1,29 @@
+This is a [RainbowKit](https://rainbowkit.com) + [wagmi](https://wagmi.sh) + [Next.js](https://nextjs.org/) project bootstrapped with [`create-rainbowkit`](https://github.com/rainbow-me/rainbowkit/tree/main/packages/create-rainbowkit).
 
-# FlagDAO
+## Getting Started
 
-FlagDAO 是一个为爱立 Flag 星人准备的 DAO，在本 DAO 中，每个人都有他自己的 Flag，每个人都想实现他的 Flag，每个人都会为其 Flag 进行质押，或者尝试判断别人的 Flag 什么时候倒 （：  
-
-我们的共识是：  
-
-1. 谨慎乐观投资自己 
-2. 嘻嘻哈哈围观他人
-
-<img width="1103" alt="image" src="https://github.com/FlagDAO/flagdao/assets/33189338/607f4fcf-ca61-453d-86aa-795c751d6cc6">
-
-
-### 应用场景、组织：
-
-- co-learn Group
-   - 学习成果、分享的承诺
-- DAO organization
-   - DAO 内事务防 flop，防止 claim 了预付资金后项目烂尾的情况。  
-- 场景非常多，大到项目方分批 milestone 解锁 investment，小到 lxdao 社区一直在提的质押早起
-
-
-
-
-
-# Build
+First, run the development server:
 
 ```bash
-$ yarn run dev
+npm run dev
 ```
 
-# Team
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- @孝羽、@大力 Lee ： idea provider
-- @Demian：frontend、Contract dev
-- @Logic Frontend
-- Secbit 郭老师, 早期 Founder
+You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+
+## Learn More
+
+To learn more about this stack, take a look at the following resources:
+
+- [RainbowKit Documentation](https://rainbowkit.com) - Learn how to customize your wallet connection flow.
+- [wagmi Documentation](https://wagmi.sh) - Learn how to interact with Ethereum.
+- [Next.js Documentation](https://nextjs.org/docs) - Learn how to build a Next.js application.
+
+You can check out [the RainbowKit GitHub repository](https://github.com/rainbow-me/rainbowkit) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
