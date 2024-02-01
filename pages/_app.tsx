@@ -42,8 +42,6 @@ const wagmiConfig = createConfig({
   webSocketPublicClient,
 });
 
-
-
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig config={wagmiConfig}>

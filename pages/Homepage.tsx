@@ -3,10 +3,10 @@ import type { NextPage } from 'next';
 import Head from 'next/head';
 import styles from '../styles/Home.module.css';
 import { useState, useEffect, lazy } from "react"
-import { supabaseKey, supabaseUrl } from "./utils/credentials"
-import { contractABI, FLAGDAO_CONTRACT_ADDR,} from "./utils/constants"
+import { supabaseKey, supabaseUrl } from "../utils/credentials"
+import { contractABI, FLAGDAO_CONTRACT_ADDR,} from "../utils/constants"
 import { createClient } from "@supabase/supabase-js"
-import Logo from './utils/Logo';
+import Logo from '../utils/Logo';
 import ModalCreateFlag from './ModalCreateFlag';
 import Link from "next/link";
 
@@ -26,7 +26,7 @@ import {
 
 // import Modal from "react-modal"
 // Modal.setAppElement("#root") // 这行代码应该在你的App根元素上
-import {email, password} from "./utils/credentials";
+import {email, password} from "../utils/credentials";
 
 
 type FormData = {

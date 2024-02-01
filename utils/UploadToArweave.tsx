@@ -27,7 +27,8 @@ interface Props {
 }
 
 // Arweave 组件
-export const UploadToArweave = forwardRef<CanShowAlert, Props>(({name, goal, onArweaveIdSet, onSetMintRes}, ref) => {
+const UploadToArweave = forwardRef<CanShowAlert, Props>(
+  ({name, goal, onArweaveIdSet, onSetMintRes}, ref) => {
   const { address } = useAccount()
 
   const [akord, setAkord] = useState<Akord>();
@@ -103,3 +104,5 @@ export const UploadToArweave = forwardRef<CanShowAlert, Props>(({name, goal, onA
   )
   return (<></>)
 })
+
+export default UploadToArweave;
