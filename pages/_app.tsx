@@ -16,8 +16,20 @@ import {
 } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 
+
+import { connectorsForWallets } from '@rainbow-me/rainbowkit';
+import {
+  injectedWallet,
+  rainbowWallet,
+  metaMaskWallet,
+  coinbaseWallet,
+  walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets';
+
+const projectId = 'b7be756b405935a67c4130e662fa2e69';
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
+    goerli,
     mainnet,
     polygon,
     optimism,
@@ -29,11 +41,24 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
   [publicProvider()]
 );
 
-const { connectors } = getDefaultWallets({
-  appName: 'flagspace.',
-  projectId: 'b7be756b405935a67c4130e662fa2e69',
-  chains,
-});
+const connectors = connectorsForWallets([
+  {
+    groupName: 'Suggested',
+    wallets: [
+      injectedWallet({ chains }),
+      metaMaskWallet({ projectId, chains }),
+      rainbowWallet({ projectId, chains }),
+      coinbaseWallet({ chains, appName: 'My RainbowKit App' }),
+      walletConnectWallet({ projectId, chains }),
+    ],
+  },
+]);
+
+// const { connectors: wagmi_connectors } = getDefaultWallets({
+//   appName: 'flagspace.',
+//   projectId,
+//   chains,
+// });
 
 const wagmiConfig = createConfig({
   autoConnect: true,
@@ -45,7 +70,7 @@ const wagmiConfig = createConfig({
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider modalSize="compact" chains={chains}>
+      <RainbowKitProvider modalSize="compact" locale='en' chains={chains}>
         <NextUIProvider>
           <Component {...pageProps} />
         </NextUIProvider>

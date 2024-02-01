@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js"
 import Logo from '../utils/Logo';
 import ModalCreateFlag from './ModalCreateFlag';
 import Link from "next/link";
+import Card from './Card';
 
 import {Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure} from "@nextui-org/react";
 
@@ -111,18 +112,11 @@ const Homepage = ({ searchParams }: Props) => {
           setFlagId={setFlagId}
           fetchFlags={fetchFlags}        
         />
-        {/* <ModalCreateFlag
-          flagId={flagId}
-          setFlagId={setFlagId}
-          fetchFlags={fetchFlags}
-        /> */}
-    
-
       </header>
 
 
 
-      {/* {darr &&
+      {darr &&
         darr.map((item, index) => (
           <Card
             key={index}
@@ -137,15 +131,9 @@ const Homepage = ({ searchParams }: Props) => {
             startAt={item.startAt}
             endAt={item.endAt}
           />
-        ))} */}
-      {/* { (data as { goal: string, flager: string ,flag_id: Number, self_pledged: Number}[]) &&
-        (data as { goal: string, flager: string ,flag_id: Number, self_pledged: Number}[]).map(
-            (item: CardProps, index: number) => 
-              <Card key={index} goal={item.goal} flager={item.flager} flag_id={item.flag_id} self_pledged={item.self_pledged}/>
-          )
-      } */}
+        ))
+      }
     </div>
-
   );
 };
 
