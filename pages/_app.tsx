@@ -3,7 +3,8 @@ import '@rainbow-me/rainbowkit/styles.css';
 import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import type { AppProps } from 'next/app';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
-
+import React, {useState, useEffect, forwardRef, useRef, useImperativeHandle} from "react";
+import { PageContext } from "../utils/context"
 import {NextUIProvider} from "@nextui-org/react";
 import {
   arbitrum,
@@ -15,8 +16,6 @@ import {
   zora,
 } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
-
-
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
   injectedWallet,
@@ -26,6 +25,19 @@ import {
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 
+/* supabase */
+import { createClient } from "@supabase/supabase-js"
+import { supabaseKey, supabaseUrl } from "../utils/credentials"
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+/* Akord (Arweave) */
+import { email, password, auth_token } from "../utils/credentials"
+import { Akord, Auth, NFTMetadata } from "@akord/akord-js";
+const vaultId: string = "MVCubhFGdWwrlRq_p_yvYOHvCCcs0agMl0Cc1oFPMY8"
+export {vaultId};
+
+/* Wallet config */
 const projectId = 'b7be756b405935a67c4130e662fa2e69';
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
@@ -68,11 +80,33 @@ const wagmiConfig = createConfig({
 });
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const [akord, setAkord] = useState<Akord | null>(null);
+  console.log("Akord in _app.js", akord)
+
+  useEffect(() => {
+    async function signInAndInit() {
+        try {
+            const { wallet } = await Auth.signIn(email, password);
+            const akord = await Akord.init(wallet);
+            setAkord(akord)
+            console.log("set akord", akord);
+        } catch (error) {
+            // 这里处理任何可能发生的错误
+            console.error(error);
+        }
+    }
+    signInAndInit();
+  }, []); // 空数组表示这个 effect 只在组件挂载时运行一次
+
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider modalSize="compact" locale='en' chains={chains}>
         <NextUIProvider>
-          <Component {...pageProps} />
+          <PageContext.Provider
+            value={{akord, supabase}}
+          >
+            <Component {...pageProps} akord={akord}/>
+          </PageContext.Provider>
         </NextUIProvider>
       </RainbowKitProvider>
     </WagmiConfig>

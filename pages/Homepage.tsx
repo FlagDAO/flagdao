@@ -1,18 +1,27 @@
+import React, {
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react"
+
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import styles from '../styles/Home.module.css';
-import { useState, useEffect, lazy } from "react"
 import { supabaseKey, supabaseUrl } from "../utils/credentials"
 import { contractABI, FLAGDAO_CONTRACT_ADDR,} from "../utils/constants"
 import { createClient } from "@supabase/supabase-js"
 import Logo from '../utils/Logo';
+import Dropdown from "./Dropdown";
 import ModalCreateFlag from './ModalCreateFlag';
 import Link from "next/link";
 import Card from './Card';
 
 import {Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure} from "@nextui-org/react";
-
+import { PageContext } from "../utils/context"
 
 import {
   useAccount,
@@ -28,6 +37,7 @@ import {
 // import Modal from "react-modal"
 // Modal.setAppElement("#root") // 这行代码应该在你的App根元素上
 import {email, password} from "../utils/credentials";
+import { Akord } from '@akord/akord-js';
 
 
 type FormData = {
@@ -44,43 +54,61 @@ export interface CardProps {
   flagStatus: string
   onChain: boolean
   created_at: string
-  startAt: string
-  endAt: string
+  startDate: string
+  endDate: string
   // bettors: Array<string>
   // other properties...
 }
 
 type Props = {
   searchParams: Record<string, string> | null | undefined;
+  // akord : Akord
 };
 
-const Homepage = ({ searchParams }: Props) => {
-  // next.js Modal.
+const Homepage = (props: Props) => {
+
+  const { akord, supabase } = useContext(PageContext)
+  // console.log("Homepage akord ", akord) // ✅
 
   const { chains, chain: chainId } = useNetwork()
   const { address, isConnected, status } = useAccount()
+
   const [curFromChild, setCurFromChild] = useState() // Flag 分类
   const [data, setData] = useState<{ [x: string]: any }[] | undefined>()
   const [darr, setDarr] = useState<{ [x: string]: any }[] | undefined>()
-  const [flagId, setFlagId] = useState(0)
 
-  const supabase = createClient(supabaseUrl, supabaseKey)
 
-  const fetchFlags = async () => {
-    const { data: res, error } = await supabase.from("flag").select("*")
-    if (error) {
-      console.error(error)
-      return
-    }
-    res.sort((a, b) => b.created_at.localeCompare(a.created_at))
-    setData(res)
-    setDarr(res)
-  }
-
+  /* ----- fetch from supabase  -------
   useEffect(() => {
-    fetchFlags()
-  }, [])
+    const fetch_flags = async () => {
+      const { data, error } = await supabase.from("flag").select("*")
+      if (error) {
+        console.error(error)
+        return
+      }
+      data.sort((a: any, b: any) => b.created_at.localeCompare(a.created_at))
+      setData(data)
+      setDarr(data)
+    }
 
+    fetch_flags()
+  }, []) */
+
+  /* ----- fetch from Contract  ------- */
+  const { data: flags, isError, isLoading } = useContractRead({
+    address: FLAGDAO_CONTRACT_ADDR,
+    abi: contractABI, 
+    functionName: 'getFlagsPagination',
+    cacheOnBlock: true,
+    args: [0, 9],
+    onSuccess(data) {
+      console.log('Successfully fetch flags from solidity backend: \n', data)
+      setData(data as any)
+      setDarr(data as any)
+    },
+  })
+
+  /* flag types */ 
   useEffect(() => {
     if (data && curFromChild) {
       let da: any = data.filter((item) => item.goalType === curFromChild)
@@ -96,22 +124,17 @@ const Homepage = ({ searchParams }: Props) => {
   }
 
   return (
-    <div className="w-full mx-auto md:w-7/12 bg-blue">
-      <header className="bg-white h-auto mt-3">
+    <div className="w-full mx-auto md:w-8/12">
+      <header className="h-auto mt-3">
         <div className="flex p-4 items-center justify-center">
-          <div className="flex-1 bg-white">
+          <div className="flex-1">
             <Logo />
           </div>
-          {/* <Dropdown onValueChange={handleValueChange} /> */}
+          <Dropdown onValueChange={handleValueChange} />
           <ConnectButton />
         </div>
         {/* <h1 className="text-3xl font-bold text-center mt-4">FlagDAO</h1> */}
-
-        <ModalCreateFlag 
-          flagId={flagId}
-          setFlagId={setFlagId}
-          fetchFlags={fetchFlags}        
-        />
+        <ModalCreateFlag />
       </header>
 
 
@@ -121,15 +144,15 @@ const Homepage = ({ searchParams }: Props) => {
           <Card
             key={index}
             goal={item.goal}
-            address={item.address}
+            address={item.flager}
             name={item.name}
             flagId={item.flagId}
-            pledgement={item.pledgement}
-            flagStatus={item.flagStatus}
+            pledgement={item.amt}
+            flagStatus={item.FlagStatus}
             onChain={item.onChain}
             created_at={item.created_at}
-            startAt={item.startAt}
-            endAt={item.endAt}
+            startDate={item.startDate}
+            endDate={item.endDate}
           />
         ))
       }

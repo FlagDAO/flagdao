@@ -23,7 +23,6 @@ import Image from 'next/image'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 
-
 const Card: React.FC<CardProps> = (props) => {
   const [amt, setAmt] = useState<number>(0.01)
   const _amt = useDebounce(amt, 10)
@@ -108,6 +107,7 @@ const Card: React.FC<CardProps> = (props) => {
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     try {
+      console.log("handleSubmit...")
       await write_gamblePledge?.()
     } catch (error) {
       console.error('Gamble-Pledge transaction failed:', error)
@@ -199,7 +199,7 @@ const Card: React.FC<CardProps> = (props) => {
             <div className="flex justify-start text-xs py-1 text-slate-400 font-medium">
               <span>
                 {" "}
-                🏁 flag From {props?.startAt} To {props?.endAt}
+                🏁 flag From {props?.startDate} To {props?.endDate}
               </span>
             </div>
             <p className="text-xs  text-slate-400 pb-4">
@@ -234,6 +234,7 @@ const Card: React.FC<CardProps> = (props) => {
           {" "}
           {props?.flagStatus == "Ongoing" && (
             <form onSubmit={(e) => handleSubmit(e)}>
+
               {isLoading ? (
                 <span className="font-sans font-semibold text-slate-800 text-base  text-center  rounded-lg ">
                   Pledging..

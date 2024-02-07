@@ -1,17 +1,9 @@
-import React, {useState, useEffect, forwardRef, useRef, useImperativeHandle} from "react";
+import React, {useState, useEffect, forwardRef, useRef, useContext, useImperativeHandle} from "react";
 import { useAccount, } from "wagmi"
 import { encodeBase64, toUtf8Bytes } from "ethers";
-// import { useForm, SubmitHandler } from "react-hook-form"
-// import { supabaseKey, supabaseUrl } from "./credentials"
-// import { createClient } from "@supabase/supabase-js"
-// import {
-//   FLAGDAO_CONTRACT_ADDR,
-//   contractABI,
-// } from "./constants"
-// import useDebounce from "../usehooks"
-import {email, password, auth_token} from "./credentials"
+import { PageContext } from "../utils/context"
 import { Akord, Auth, NFTMetadata } from "@akord/akord-js";
-const vaultId: string = "MVCubhFGdWwrlRq_p_yvYOHvCCcs0agMl0Cc1oFPMY8"
+import { vaultId } from "../pages/_app";
 
 export interface CanShowAlert {
   showAlert(): void;
@@ -27,28 +19,14 @@ interface Props {
 }
 
 // Arweave 组件
-const UploadToArweave = forwardRef<CanShowAlert, Props>(
-  ({name, goal, onArweaveIdSet, onSetMintRes}, ref) => {
+const UploadToArweave = forwardRef<CanShowAlert, Props>(  
+  ({name, goal, onArweaveIdSet, onSetMintRes }, ref,) => {
+
   const { address } = useAccount()
+  const { akord } = useContext(PageContext)
+  // console.log("akord in UploadToArweave", akord)
 
-  const [akord, setAkord] = useState<Akord>();
   const [nftId, setNftId] = useState<string | null>(null); // 存储 mint 后的 nftId
-
-  useEffect(() => {
-    async function signInAndInit() {
-        try {
-            const { wallet } = await Auth.signIn(email, password);
-            const akord = await Akord.init(wallet);
-            setAkord(akord)
-            console.log("set akord", akord);
-        } catch (error) {
-            // 这里处理任何可能发生的错误
-            console.error(error);
-        }
-    }
-    signInAndInit();
-  }, []); // 空数组表示这个 effect 只在组件挂载时运行一次
-
 
   // 让父组件调用其中的 handleUploadToArweave(e)
   // https://stackoverflow.com/questions/66363320/call-child-function-from-parent-in-reactjs-using-useref
