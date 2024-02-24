@@ -17,7 +17,7 @@ FlagSpace 是一个为爱立 Flag 星人准备的，在这里，每个人都有�
    - 学习成果、分享的承诺
 - DAO organization
    - DAO 内事务防 flop，防止 claim 了预付资金后项目烂尾的情况。  
-- 场景非常多，大到项目方分批 milestone 解锁 investment，小到 lxdao 社区一直在提的质押早起
+- 场景非常多，大到项目方分批 milestone 解锁 investment，小到在群聊里口嗨的请客吃饭（不能耍赖！）
 
 
 
